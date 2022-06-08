@@ -27,6 +27,7 @@ set(MODULE_SRCS
 
 set(MODULE_MOC_SRCS
   qSlicer${MODULE_NAME}Module.h
+  qSlicer${MODULE_NAME}Writer.h
   )
 
 set(MODULE_TARGET_LIBRARIES

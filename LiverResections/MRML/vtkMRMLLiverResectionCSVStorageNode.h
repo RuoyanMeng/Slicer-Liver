@@ -37,37 +37,44 @@
 
 ==============================================================================*/
 
-// This file was based on qSlicerMarkupsWriter.h in 3D Slicer
-//
-#ifndef __qslicerliverresectionswriter_h
-#define __qslicerliverresectionswriter_h
+#ifndef __vtkmrmlliverresectionsfiducialstoragenode_h_
+#define __vtkmrmlliverresectionsfiducialstoragenode_h_
 
+#include "vtkSlicerLiverResectionsModuleMRMLExport.h"
 
-// QtCore includes
-#include "qSlicerLiverResectionsModuleExport.h"
-#include "qSlicerNodeWriter.h"
+#include <vtkMRMLMarkupsFiducialStorageNode.h>
 
-class vtkMRMLNode;
-class vtkMRMLStorableNode;
-
-/// Utility class that offers writing of markups in both json format, regardless of the current storage node.
-class Q_SLICER_QTMODULES_LIVERRESECTIONS_EXPORT qSlicerLiverResectionsWriter
-  : public qSlicerNodeWriter
+class VTK_SLICER_LIVERRESECTIONS_MODULE_MRML_EXPORT vtkMRMLLiverResectionCSVStorageNode : public vtkMRMLMarkupsFiducialStorageNode
 {
-  Q_OBJECT
-public:
-  typedef qSlicerNodeWriter Superclass;
-  qSlicerLiverResectionsWriter(QObject* parent);
-  ~qSlicerLiverResectionsWriter() override;
 
-  QStringList extensions(vtkObject* object)const override;
+  public:
+  static vtkMRMLLiverResectionCSVStorageNode *New();
+  vtkTypeMacro(vtkMRMLLiverResectionCSVStorageNode, vtkMRMLMarkupsFiducialStorageNode);
+  void PrintSelf(ostream& os, vtkIndent indent) override;
 
-  bool write(const qSlicerIO::IOProperties& properties) override;
+  vtkMRMLNode* CreateNodeInstance() override;
 
-  void setStorageNodeClass(vtkMRMLStorableNode* storableNode, const QString& storageNodeClassName);
+  ///
+  /// Get node XML tag name (like Storage, Model)
+  const char* GetNodeTagName() override {return "LiverResectionFiducialStorage";};
 
-private:
-  Q_DISABLE_COPY(qSlicerLiverResectionsWriter);
+  bool CanReadInReferenceNode(vtkMRMLNode *refNode) override;
+
+protected:
+  /// Initialize all the supported write file types
+  void InitializeSupportedReadFileTypes() override;
+
+  /// Initialize all the supported write file types
+  void InitializeSupportedWriteFileTypes() override;
+
+  int WriteDataInternal(vtkMRMLNode *refNode) override;
+
+protected:
+  vtkMRMLLiverResectionCSVStorageNode();
+  ~vtkMRMLLiverResectionCSVStorageNode() override;
+  vtkMRMLLiverResectionCSVStorageNode(const vtkMRMLLiverResectionCSVStorageNode&);
+  void operator=(const vtkMRMLLiverResectionCSVStorageNode&);
 };
 
-#endif // __qslicerliverresectionswriter_h
+
+#endif // __vtkmrmlliverresectionsfiducialstoragenode_h_

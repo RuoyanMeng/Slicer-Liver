@@ -52,7 +52,7 @@
 // MRML includes
 #include <vtkMRMLScene.h>
 #include <vtkMRMLSceneViewNode.h>
-// #include <vtkMRMLLiverResectionsJsonStorageNode.h>
+#include "vtkMRMLLiverResectionCSVStorageNode.h"
 
 #include <vtkMRMLStorageNode.h>
 
@@ -62,7 +62,7 @@
 
 //----------------------------------------------------------------------------
 qSlicerLiverResectionsWriter::qSlicerLiverResectionsWriter(QObject* parentObject)
-  : qSlicerNodeWriter("LiverResections", QString("LiverResectionsFile"), QStringList() << "vtkMRMLLiverResectionsNode", true, parentObject)
+  : qSlicerNodeWriter("LiverResections", QString("LiverResectionFile"), QStringList() << "vtkMRMLLiverResectionNode", true, parentObject)
 {
 }
 
@@ -74,21 +74,21 @@ QStringList qSlicerLiverResectionsWriter::extensions(vtkObject* vtkNotUsed(objec
 {
   QStringList supportedExtensions;
 
-  vtkNew<vtkMRMLLiverResectionsJsonStorageNode> jsonStorageNode;
-  const int formatCount = jsonStorageNode->GetSupportedWriteFileTypes()->GetNumberOfValues();
-  for (int formatIt = 0; formatIt < formatCount; ++formatIt)
-    {
-    vtkStdString format = jsonStorageNode->GetSupportedWriteFileTypes()->GetValue(formatIt);
-    supportedExtensions << QString::fromStdString(format);
-    }
-
-  // vtkNew<vtkMRMLLiverResectionsFiducialStorageNode> fcsvStorageNode;
-  // const int fidsFormatCount = fcsvStorageNode->GetSupportedWriteFileTypes()->GetNumberOfValues();
-  // for (int formatIt = 0; formatIt < fidsFormatCount; ++formatIt)
+  // vtkNew<vtkMRMLLiverResectionsJsonStorageNode> jsonStorageNode;
+  // const int formatCount = jsonStorageNode->GetSupportedWriteFileTypes()->GetNumberOfValues();
+  // for (int formatIt = 0; formatIt < formatCount; ++formatIt)
   //   {
-  //   vtkStdString format = fcsvStorageNode->GetSupportedWriteFileTypes()->GetValue(formatIt);
+  //   vtkStdString format = jsonStorageNode->GetSupportedWriteFileTypes()->GetValue(formatIt);
   //   supportedExtensions << QString::fromStdString(format);
   //   }
+
+  vtkNew<vtkMRMLLiverResectionCSVStorageNode> fcsvStorageNode;
+  const int fidsFormatCount = fcsvStorageNode->GetSupportedWriteFileTypes()->GetNumberOfValues();
+  for (int formatIt = 0; formatIt < fidsFormatCount; ++formatIt)
+    {
+    vtkStdString format = fcsvStorageNode->GetSupportedWriteFileTypes()->GetValue(formatIt);
+    supportedExtensions << QString::fromStdString(format);
+    }
 
   return supportedExtensions;
 }
@@ -138,18 +138,18 @@ bool qSlicerLiverResectionsWriter::write(const qSlicerIO::IOProperties& properti
   vtkMRMLStorableNode* node = vtkMRMLStorableNode::SafeDownCast(this->getNodeByID(properties["nodeID"].toString().toUtf8().data()));
   std::string fileName = properties["fileName"].toString().toStdString();
 
-  vtkNew<vtkMRMLLiverResectionsFiducialStorageNode> fcsvStorageNode;
+  vtkNew<vtkMRMLLiverResectionCSVStorageNode> fcsvStorageNode;
   std::string fcsvCompatibleFileExtension = fcsvStorageNode->GetSupportedFileExtension(fileName.c_str(), false, true);
   if (!fcsvCompatibleFileExtension.empty())
     {
     // fcsv file needs to be written
-    this->setStorageNodeClass(node, "vtkMRMLLiverResectionsFiducialStorageNode");
+    this->setStorageNodeClass(node, "vtkMRMLLiverResectionCSVStorageNode");
     }
-  else
-    {
-    // json file needs to be written
-    this->setStorageNodeClass(node, "vtkMRMLLiverResectionsJsonStorageNode");
-    }
+  // else
+  //   {
+  //   // json file needs to be written
+  //   this->setStorageNodeClass(node, "vtkMRMLLiverResectionsJsonStorageNode");
+  //   }
 
   return Superclass::write(properties);
 }
