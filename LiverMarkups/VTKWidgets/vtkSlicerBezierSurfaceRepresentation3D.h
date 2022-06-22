@@ -122,6 +122,7 @@ protected:
 
     vtkSmartPointer<vtkOpenGLResection2DPolyDataMapper> BezierSurfaceResectionMapper2D;
     vtkSmartPointer<vtkBezierSurfaceSource> BezierPlane;
+    vtkSmartPointer<vtkDataArray> p;
 
     // Control polygon related elements
     vtkSmartPointer<vtkPolyData> ControlPolygonPolyData;

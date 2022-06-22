@@ -417,13 +417,13 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateBezierSurfaceGeometry(vtkMRML
 
         this->BezierSurfaceSource->SetControlPoints(this->BezierSurfaceControlPoints);
         this->BezierSurfaceSource->Update();
-        auto p = this->BezierSurfaceSource->GetOutput()->GetPoints()->GetData();
-        p->SetName("BSPoints");
+        this->p = this->BezierSurfaceSource->GetOutput()->GetPoints()->GetData();
+        this->p->SetName("BSPoints");
         if(this->BezierPlane->GetOutput()->GetPointData()->GetArray("BSPoints")){
             this->BezierPlane->GetOutput()->GetPointData()->RemoveArray("BSPoints");
-            this->BezierPlane->GetOutput()->GetPointData()->AddArray(p);
+            this->BezierPlane->GetOutput()->GetPointData()->AddArray(this->p);
         }else{
-            this->BezierPlane->GetOutput()->GetPointData()->AddArray(p);
+            this->BezierPlane->GetOutput()->GetPointData()->AddArray(this->p);
         }
 
 
