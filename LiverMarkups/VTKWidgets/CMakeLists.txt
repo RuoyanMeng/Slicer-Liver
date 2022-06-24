@@ -40,6 +40,8 @@ set(${KIT}_SRCS
         vtkOpenGLBezierResectionPolyDataMapper2D.cpp
         vtkOpenGLResection2DPolyDataMapper.cpp
         vtkOpenGLResection2DPolyDataMapper.h
+        vtkOpenGLResection2DPolyDataMapperTest.cpp
+        vtkOpenGLResection2DPolyDataMapperTest.h
         )
 
 set(${KIT}_TARGET_LIBRARIES

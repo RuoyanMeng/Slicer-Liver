@@ -110,10 +110,10 @@ vtkSlicerBezierSurfaceRepresentation3D::vtkSlicerBezierSurfaceRepresentation3D()
     auto PlaneControlPoints = vtkSmartPointer<vtkPoints>::New();
 
     for(int i=0;i<4;i++){
-        PlaneControlPoints->InsertNextPoint(-200,(i*30),200);
-        PlaneControlPoints->InsertNextPoint(-170,(i*30),200);
-        PlaneControlPoints->InsertNextPoint(-140,(i*30),200);
-        PlaneControlPoints->InsertNextPoint(-110,(i*30),200);
+        PlaneControlPoints->InsertNextPoint(-150,300,(i*100));
+        PlaneControlPoints->InsertNextPoint(-50,300,(i*100));
+        PlaneControlPoints->InsertNextPoint(50,300,(i*100));
+        PlaneControlPoints->InsertNextPoint(150,300,(i*100));
 
     }
 
