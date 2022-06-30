@@ -130,7 +130,8 @@ void vtkOpenGLResection2DPolyDataMapper::ReplaceShaderValues(
             "vertexMCVSOutputBS = vertexMCBS;\n"
             "vertexWCVSOutputBS = uIjkToTexture*uRasToIjk*uShiftScaleBS*vertexMCBS;\n"
             "mat4 m = mat4(1.0);\n"
-            "gl_Position = MCDCMatrix *m* vertexMC;\n");
+            "m[2][2] = 0.0;\n"
+            "gl_Position = m * MCDCMatrix * vertexMC;\n");
 
     vtkShaderProgram::Substitute(
             FSSource, "//VTK::PositionVC::Dec",

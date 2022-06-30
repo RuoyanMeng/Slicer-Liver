@@ -166,6 +166,8 @@ vtkSlicerBezierSurfaceRepresentation3D::vtkSlicerBezierSurfaceRepresentation3D()
     this->ControlPolygonActor->SetMapper(this->ControlPolygonMapper);
 
     this->DistanceMapVolumeNode = nullptr;
+
+    this->CoRenderer2D = vtkSmartPointer<vtkRenderer>::New();;
 }
 
 //------------------------------------------------------------------------------

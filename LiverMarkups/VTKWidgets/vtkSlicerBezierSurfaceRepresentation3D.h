@@ -137,6 +137,8 @@ protected:
     vtkNew<vtkTransform> VBOInverseTransform;
     vtkWeakPointer<vtkShaderProperty> ShaderProperty;
 
+    vtkSmartPointer<vtkRenderer> CoRenderer2D;
+
 protected:
     vtkSlicerBezierSurfaceRepresentation3D();
 
