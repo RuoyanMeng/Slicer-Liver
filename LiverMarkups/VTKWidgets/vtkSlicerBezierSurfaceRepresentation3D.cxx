@@ -47,6 +47,7 @@
 #include "vtkOpenGLBezierResectionPolyDataMapper.h"
 #include "vtkOpenGLBezierResectionPolyDataMapper2D.h"
 #include "vtkOpenGLResection2DPolyDataMapper.h"
+#include "vtkRenderer.h"
 
 // MRML includes
 #include <qMRMLThreeDWidget.h>
@@ -89,7 +90,7 @@
 
 //------------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerBezierSurfaceRepresentation3D);
-
+static const int RENDERER_LAYER = 1;
 //------------------------------------------------------------------------------
 vtkSlicerBezierSurfaceRepresentation3D::vtkSlicerBezierSurfaceRepresentation3D() {
     this->BezierSurfaceSource = vtkSmartPointer<vtkBezierSurfaceSource>::New();
@@ -167,7 +168,18 @@ vtkSlicerBezierSurfaceRepresentation3D::vtkSlicerBezierSurfaceRepresentation3D()
 
     this->DistanceMapVolumeNode = nullptr;
 
-    this->CoRenderer2D = vtkSmartPointer<vtkRenderer>::New();;
+
+    auto renderWindow = vtkRenderWindow::SafeDownCast(this->GetRenderer()->GetRenderWindow());
+
+    if (renderWindow->GetNumberOfLayers() < RENDERER_LAYER+1)
+    {
+        renderWindow->SetNumberOfLayers( RENDERER_LAYER+1 );
+    }
+
+    auto renderer2D = vtkSmartPointer<vtkRenderer>::New();
+    renderer2D->InteractiveOff();
+    renderer2D->SetLayer(RENDERER_LAYER);
+    renderWindow->AddRenderer(renderer2D);
 }
 
 //------------------------------------------------------------------------------
@@ -243,6 +255,7 @@ void vtkSlicerBezierSurfaceRepresentation3D::GetActors(vtkPropCollection *pc) {
     this->BezierSurfaceActor->GetActors(pc);
     this->BezierSurfaceActor2D->GetActors(pc);
     this->ControlPolygonActor->GetActors(pc);
+
 
 }
 
@@ -459,6 +472,17 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateControlPolygonGeometry(vtkMRM
 //----------------------------------------------------------------------
 void vtkSlicerBezierSurfaceRepresentation3D::CreateAndTransferDistanceMapTexture(vtkMRMLScalarVolumeNode *node) {
     auto renderWindow = vtkOpenGLRenderWindow::SafeDownCast(this->GetRenderer()->GetRenderWindow());
+
+//    if (renderWindow->GetNumberOfLayers() < RENDERER_LAYER+1)
+//    {
+//        renderWindow->SetNumberOfLayers( RENDERER_LAYER+1 );
+//    }
+//    auto CoRenderer2D = vtkSmartPointer<vtkRenderer>::New();
+//    CoRenderer2D->SetLayer(RENDERER_LAYER);
+//    CoRenderer2D->AddActor(this->BezierSurfaceActor2D);
+//    renderWindow->AddRenderer(CoRenderer2D);
+
+
     this->DistanceMapTexture = vtkSmartPointer<vtkTextureObject>::New();
     this->DistanceMapTexture->SetContext(renderWindow);
 
