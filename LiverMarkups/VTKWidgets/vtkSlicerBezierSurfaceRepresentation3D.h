@@ -51,7 +51,8 @@
 // VTK includes
 #include <vtkWeakPointer.h>
 #include <vtkSmartPointer.h>
-
+#include "vtkOpenGLPolyDataMapper2D.h"
+#include "vtkActor2D.h"
 //------------------------------------------------------------------------------
 class vtkBezierSurfaceSource;
 
@@ -119,6 +120,9 @@ protected:
     vtkSmartPointer<vtkPolyDataNormals> BezierSurfaceNormals;
 //    vtkSmartPointer<vtkOpenGLBezierResectionPolyDataMapper2D> BezierSurfaceResectionMapper2D;
     vtkSmartPointer<vtkOpenGLActor> BezierSurfaceActor2D;
+//    vtkSmartPointer<vtkActor2D> BezierSurfaceActor2D;
+//    vtkSmartPointer<vtkOpenGLPolyDataMapper2D> BezierSurfaceResectionMapper2D;
+
 
     vtkSmartPointer<vtkOpenGLResection2DPolyDataMapper> BezierSurfaceResectionMapper2D;
     vtkSmartPointer<vtkBezierSurfaceSource> BezierPlane;
@@ -139,6 +143,7 @@ protected:
 
     vtkSmartPointer<vtkRenderer> CoRenderer2D;
 
+
 protected:
     vtkSlicerBezierSurfaceRepresentation3D();
 
@@ -151,6 +156,7 @@ protected:
     void UpdateBezierSurfaceGeometry(vtkMRMLMarkupsBezierSurfaceNode *);
 
     void UpdateBezierSurfaceDisplay(vtkMRMLMarkupsBezierSurfaceNode *);
+
 
 private:
     vtkSlicerBezierSurfaceRepresentation3D(const vtkSlicerBezierSurfaceRepresentation3D &) = delete;
