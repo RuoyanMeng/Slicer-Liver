@@ -293,6 +293,9 @@ class LiverWidget(ScriptedLoadableModuleWidget):
       else:
           lvLogic.HideBezierSurfaceMarkupFromResection(self._currentResectionNode)
           lvLogic.HideInitializationMarkupFromResection(self._currentResectionNode)
+          renderers = slicer.app.layoutManager().threeDWidget(0).threeDView().renderWindow().GetRenderers()
+          if renderers.GetNumberOfItems()==5:
+            renderers.RemoveItem(4)
 
     self._currentResectionNode = activeResectionNode
 
