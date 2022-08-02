@@ -170,6 +170,7 @@ void vtkSlicerLiverResectionsLogic::ProcessMRMLNodesEvents(vtkObject *caller,
         vtkMRMLMarkupsBezierSurfaceDisplayNode::SafeDownCast(bezierSurfaceNode->GetDisplayNode());
       if (bezierSurfaceDisplayNode)
         {
+          bezierSurfaceDisplayNode->SetShowResection2D(resectionNode->GetShowResection2D());
         bezierSurfaceDisplayNode->SetClipOut(resectionNode->GetClipOut());
         bezierSurfaceDisplayNode->SetWidgetVisibility(resectionNode->GetWidgetVisibility());
         bezierSurfaceDisplayNode->SetInterpolatedMargins(resectionNode->GetInterpolatedMargins());
@@ -275,7 +276,6 @@ void vtkSlicerLiverResectionsLogic::OnMRMLSceneNodeRemoved(vtkMRMLNode* node)
 
   this->GetMRMLScene()->RemoveNode(bezierSurfaceNode);
   this->GetMRMLScene()->RemoveNode(initializationNode);
-
   Superclass::OnMRMLSceneNodeRemoved(node);
 }
 

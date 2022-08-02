@@ -179,6 +179,15 @@ public:
   // Set the clipout state variable
   vtkSetMacro(ClipOut, int);
 
+    // Set the clipout state variable
+    vtkSetMacro(ShowResection2D, bool);
+
+    // Get the clipout state variable
+    vtkGetMacro(ShowResection2D, bool);
+
+    // Set the clipout state variable
+    vtkSetMacro(ShowResection2D, int);
+
   // Set the widget visibility variable
   vtkSetMacro(WidgetVisibility, bool);
 
@@ -270,6 +279,7 @@ private:
   bool GridVisibility;
   float GridDivisions;
   float GridThickness;
+  bool ShowResection2D;
 
 private:
  vtkMRMLLiverResectionNode(const vtkMRMLLiverResectionNode&);

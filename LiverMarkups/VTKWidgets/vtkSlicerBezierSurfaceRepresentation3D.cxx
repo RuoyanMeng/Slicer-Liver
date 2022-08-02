@@ -208,7 +208,6 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateFromMRML(vtkMRMLNode *caller,
     // Update the distance map as 3D texture (if changed)
     auto distanceMap = liverMarkupsBezierSurfaceNode->GetDistanceMapVolumeNode();
 
-    auto renderWindow1 = vtkRenderWindow::SafeDownCast(this->GetRenderer()->GetRenderWindow());
     if (this->DistanceMapVolumeNode != distanceMap) {
         this->CreateAndTransferDistanceMapTexture(distanceMap);
 
@@ -235,51 +234,32 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateFromMRML(vtkMRMLNode *caller,
         }
 
         this->DistanceMapVolumeNode = distanceMap;
-
-        //------------------- add new renderer here ----------------------//
-        std::cout<<"--------------------------------------------------"<<endl;
-        double yViewport[4] = {0.0, 0.7, 0.2, 1.0};
-
-        if (renderWindow1->GetNumberOfLayers() < RENDERER_LAYER+1)
-        {
-            renderWindow1->SetNumberOfLayers( RENDERER_LAYER+1 );
-        }
-        auto CoRenderer2D = vtkSmartPointer<vtkRenderer>::New();
-        CoRenderer2D->SetLayer(RENDERER_LAYER);
-        CoRenderer2D->InteractiveOff();
-//        double minX = 0;
-//        double minY = 0;
-//        CoRenderer2D->NormalizedDisplayToDisplay(minX, minY);
-//        double maxX = 1;
-//        double maxY = 1;
-//        CoRenderer2D->NormalizedDisplayToDisplay(maxX, maxY);
-        CoRenderer2D->AddActor(this->BezierSurfaceActor2D);
-        CoRenderer2D->SetViewport(yViewport);
-        renderWindow1->AddRenderer(CoRenderer2D);
-        renderWindow1->Render();
     }
 
-//    auto renderWindow1 = vtkRenderWindow::SafeDownCast(this->GetRenderer()->GetRenderWindow());
-//    auto renderers = renderWindow1->GetRenderers();
-//    if(renderers->GetNumberOfItems()==5){
-//        vtkCollectionSimpleIterator rsit;
-//        renderers->InitTraversal(rsit);
-//        auto re0 = renderers->GetNextRenderer(rsit);
-//        renderers->InitTraversal(rsit);
-//        auto re1 = renderers->GetNextRenderer(rsit);
-//        renderers->InitTraversal(rsit);
-//        auto re2 = renderers->GetNextRenderer(rsit);
-//        renderers->InitTraversal(rsit);
-//        auto re3 = renderers->GetNextRenderer(rsit);
-//        renderers->InitTraversal(rsit);
-//        auto re4 = renderers->GetNextRenderer(rsit);
-//        re0->Print(std::cout);
-//        re1->Print(std::cout);
-//        re2->Print(std::cout);
-//        re3->Print(std::cout);
-//        re4->Print(std::cout);
-//    }
+    //------------------- add new renderer here ----------------------//
+    auto renderWindow1 = vtkRenderWindow::SafeDownCast(this->GetRenderer()->GetRenderWindow());
+    auto renderers = renderWindow1->GetRenderers();
+    auto displayNode = vtkMRMLMarkupsBezierSurfaceDisplayNode::SafeDownCast(liverMarkupsBezierSurfaceNode->GetDisplayNode());
 
+    if(displayNode->GetShowResection2D()){
+        if(renderers->GetNumberOfItems()!=5){
+            std::cout<<"-------------------add new renderer------------------"<<endl;
+            double yViewport[4] = {0.0, 0.7, 0.2, 1.0};
+
+            if (renderWindow1->GetNumberOfLayers() < RENDERER_LAYER+1)
+            {
+                renderWindow1->SetNumberOfLayers( RENDERER_LAYER+1 );
+            }
+            auto CoRenderer2D = vtkSmartPointer<vtkRenderer>::New();
+            CoRenderer2D->SetLayer(RENDERER_LAYER);
+            CoRenderer2D->InteractiveOff();
+            CoRenderer2D->AddActor(this->BezierSurfaceActor2D);
+            CoRenderer2D->SetViewport(yViewport);
+            renderWindow1->AddRenderer(CoRenderer2D);
+            renderWindow1->Render();
+        }
+
+    }
 
     this->NeedToRenderOn();
 
@@ -288,7 +268,6 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateFromMRML(vtkMRMLNode *caller,
 }void vtkSlicerBezierSurfaceRepresentation3D::GetActors(vtkPropCollection *pc) {
     this->Superclass::GetActors(pc);
     this->BezierSurfaceActor->GetActors(pc);
-//    this->BezierSurfaceActor2D->GetActors(pc);
     this->ControlPolygonActor->GetActors(pc);
 
 
@@ -309,7 +288,6 @@ int vtkSlicerBezierSurfaceRepresentation3D::RenderOverlay(vtkViewport *viewport)
     count = this->Superclass::RenderOverlay(viewport);
     if (this->BezierSurfaceActor->GetVisibility()) {
         count += this->BezierSurfaceActor->RenderOverlay(viewport);
-//        count += this->BezierSurfaceActor2D->RenderOverlay(viewport);
         count += this->ControlPolygonActor->RenderOverlay(viewport);
     }
     return count;
@@ -323,10 +301,6 @@ int vtkSlicerBezierSurfaceRepresentation3D::RenderOpaqueGeometry(
     if (this->BezierSurfaceActor->GetVisibility()) {
         count += this->BezierSurfaceActor->RenderOpaqueGeometry(viewport);
     }
-//    if (this->BezierSurfaceActor2D->GetVisibility()) {
-//
-//        count += this->BezierSurfaceActor2D->RenderOpaqueGeometry(viewport);
-//    }
     if (this->ControlPolygonActor->GetVisibility()) {
         double diameter = (this->MarkupsDisplayNode->GetCurveLineSizeMode() ==
                            vtkMRMLMarkupsDisplayNode::UseLineDiameter ?
@@ -349,12 +323,6 @@ int vtkSlicerBezierSurfaceRepresentation3D::RenderTranslucentPolygonalGeometry(
         this->BezierSurfaceActor->SetPropertyKeys(this->GetPropertyKeys());
         count += this->BezierSurfaceActor->RenderTranslucentPolygonalGeometry(viewport);
     }
-//    if (this->BezierSurfaceActor2D->GetVisibility()) {
-//        // The internal actor needs to share property keys.
-//        // This ensures the mapper state is consistent and allows depth peeling to work as expected.
-//        this->BezierSurfaceActor2D->SetPropertyKeys(this->GetPropertyKeys());
-//        count += this->BezierSurfaceActor2D->RenderTranslucentPolygonalGeometry(viewport);
-//    }
     if (this->ControlPolygonActor->GetVisibility()) {
         // The internal actor needs to share property keys.
         // This ensures the mapper state is consistent and allows depth peeling to work as expected.

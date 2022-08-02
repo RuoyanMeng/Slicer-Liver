@@ -107,6 +107,7 @@ vtkTypeMacro(vtkOpenGLResection2DPolyDataMapper, vtkOpenGLPolyDataMapper);
     /// Set the thickness factor for the grid
     void SetGridThicknessFactor(float thicknessFactor);
 
+
 protected:
     vtkOpenGLResection2DPolyDataMapper();
     ~vtkOpenGLResection2DPolyDataMapper();

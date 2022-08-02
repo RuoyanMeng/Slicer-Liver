@@ -45,23 +45,24 @@ from slicer.ScriptedLoadableModule import *
 import numpy as np
 import LiverSegments
 
+
 #
 # Liver
 #
 
 class Liver(ScriptedLoadableModule):
-  """Uses ScriptedLoadableModule base class, available at:
-  https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
-  """
+    """Uses ScriptedLoadableModule base class, available at:
+    https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
+    """
 
-  def __init__(self, parent):
-    ScriptedLoadableModule.__init__(self, parent)
-    self.parent.title = "Liver"
-    self.parent.categories = [""]
-    self.parent.dependencies = []
-    self.parent.contributors = ["Rafael Palomar (Oslo University Hospital / NTNU)"]
+    def __init__(self, parent):
+        ScriptedLoadableModule.__init__(self, parent)
+        self.parent.title = "Liver"
+        self.parent.categories = [""]
+        self.parent.dependencies = []
+        self.parent.contributors = ["Rafael Palomar (Oslo University Hospital / NTNU)"]
 
-    self.parent.helpText = """
+        self.parent.helpText = """
     This module offers tools for computing liver resection plans in 3D liver models.
     ""
     This file was originally developed by Rafael Palomar (Oslo University
@@ -70,44 +71,46 @@ class Liver(ScriptedLoadableModule):
     Norway through the project ALive (grant nr. 311393).
     """
 
-    # Additional initialization step after application startup is complete
-    slicer.app.connect("startupCompleted()", registerSampleData)
+        # Additional initialization step after application startup is complete
+        slicer.app.connect("startupCompleted()", registerSampleData)
+
 
 #
 # Register sample data sets in Sample Data module
 #
 
 def registerSampleData():
-  """
-  Add data sets to Sample Data module.
-  """
-  import SampleData
-  iconsPath = os.path.join(os.path.dirname(__file__), 'Resources/Icons')
+    """
+    Add data sets to Sample Data module.
+    """
+    import SampleData
+    iconsPath = os.path.join(os.path.dirname(__file__), 'Resources/Icons')
 
-  aliveDataURL ='https://github.com/alive-research/aliveresearchtestingdata/releases/download/'
+    aliveDataURL = 'https://github.com/alive-research/aliveresearchtestingdata/releases/download/'
 
-  # Liver dataset
-  SampleData.SampleDataLogic.registerCustomSampleDataSource(
-    category ='Liver',
-    sampleName ='LiverVolume000',
-    thumbnailFileName = os.path.join(iconsPath, 'LiverVolume000.png'),
-    uris = aliveDataURL+'SHA256/5df79d9077b1cf2b746ff5cf9268e0bc4d440eb50fa65308b47bde094640458a',
-    fileNames ='LiverVolume000.nrrd',
-    checksums = 'SHA256:5df79d9077b1cf2b746ff5cf9268e0bc4d440eb50fa65308b47bde094640458a',
-    nodeNames ='LiverVolume000',
-    loadFileType ='VolumeFile'
-  )
+    # Liver dataset
+    SampleData.SampleDataLogic.registerCustomSampleDataSource(
+        category='Liver',
+        sampleName='LiverVolume000',
+        thumbnailFileName=os.path.join(iconsPath, 'LiverVolume000.png'),
+        uris=aliveDataURL + 'SHA256/5df79d9077b1cf2b746ff5cf9268e0bc4d440eb50fa65308b47bde094640458a',
+        fileNames='LiverVolume000.nrrd',
+        checksums='SHA256:5df79d9077b1cf2b746ff5cf9268e0bc4d440eb50fa65308b47bde094640458a',
+        nodeNames='LiverVolume000',
+        loadFileType='VolumeFile'
+    )
 
-  SampleData.SampleDataLogic.registerCustomSampleDataSource(
-    category ='Liver',
-    sampleName ='LiverSegmentation000',
-    thumbnailFileName = os.path.join(iconsPath, 'LiverSegmentation000.png'),
-    uris = aliveDataURL+'SHA256/56aa9ee4658904dfae5cca514f594fa6c5b490376514358137234e22d57452a4',
-    fileNames ='LiverSegmentation000.seg.nrrd',
-    checksums = 'SHA256:56aa9ee4658904dfae5cca514f594fa6c5b490376514358137234e22d57452a4',
-    nodeNames ='LiverSegmentation000',
-    loadFileType = 'SegmentationFile'
-  )
+    SampleData.SampleDataLogic.registerCustomSampleDataSource(
+        category='Liver',
+        sampleName='LiverSegmentation000',
+        thumbnailFileName=os.path.join(iconsPath, 'LiverSegmentation000.png'),
+        uris=aliveDataURL + 'SHA256/56aa9ee4658904dfae5cca514f594fa6c5b490376514358137234e22d57452a4',
+        fileNames='LiverSegmentation000.seg.nrrd',
+        checksums='SHA256:56aa9ee4658904dfae5cca514f594fa6c5b490376514358137234e22d57452a4',
+        nodeNames='LiverSegmentation000',
+        loadFileType='SegmentationFile'
+    )
+
 
 #
 # LiverWidget
@@ -115,484 +118,521 @@ def registerSampleData():
 
 class LiverWidget(ScriptedLoadableModuleWidget):
 
-  def __init__(self, parent=None):
-    """
-    Called when the user opens the module the first time and the widget is initialized.
-    """
-    ScriptedLoadableModuleWidget.__init__(self, parent)
+    def __init__(self, parent=None):
+        """
+        Called when the user opens the module the first time and the widget is initialized.
+        """
+        ScriptedLoadableModuleWidget.__init__(self, parent)
 
-    self.logic = None
-    self._uiLoader = loader = qt.QUiLoader()
-    self._currentResectionNode = None
+        self.logic = None
+        self._uiLoader = loader = qt.QUiLoader()
+        self._currentResectionNode = None
 
-  def setup(self):
-    """
-    Called when the user opens the module the first time and the widget is initialized.
-    """
-    ScriptedLoadableModuleWidget.setup(self)
+    def setup(self):
+        """
+        Called when the user opens the module the first time and the widget is initialized.
+        """
+        ScriptedLoadableModuleWidget.setup(self)
 
-    distanceMapsUI = slicer.util.loadUI(self.resourcePath('UI/DistanceMapsWidget.ui'))
-    distanceMapsUI.setMRMLScene(slicer.mrmlScene)
-    resectionsUI= slicer.util.loadUI(self.resourcePath('UI/ResectionsWidget.ui'))
-    resectionsUI.setMRMLScene(slicer.mrmlScene)
+        distanceMapsUI = slicer.util.loadUI(self.resourcePath('UI/DistanceMapsWidget.ui'))
+        distanceMapsUI.setMRMLScene(slicer.mrmlScene)
+        resectionsUI = slicer.util.loadUI(self.resourcePath('UI/ResectionsWidget.ui'))
+        resectionsUI.setMRMLScene(slicer.mrmlScene)
 
-    self.layout.addWidget(distanceMapsUI)
-    self.layout.addWidget(resectionsUI)
+        self.layout.addWidget(distanceMapsUI)
+        self.layout.addWidget(resectionsUI)
 
-    self.distanceMapsWidget = slicer.util.childWidgetVariables(distanceMapsUI)
-    self.resectionsWidget = slicer.util.childWidgetVariables(resectionsUI)
+        self.distanceMapsWidget = slicer.util.childWidgetVariables(distanceMapsUI)
+        self.resectionsWidget = slicer.util.childWidgetVariables(resectionsUI)
 
-    # Add LiverSegmentsWidget
-    wrapperWidget = slicer.qMRMLWidget()
-    wrapperWidget.setLayout(qt.QVBoxLayout())
-    wrapperWidget.setMRMLScene(slicer.mrmlScene)
+        # Add LiverSegmentsWidget
+        wrapperWidget = slicer.qMRMLWidget()
+        wrapperWidget.setLayout(qt.QVBoxLayout())
+        wrapperWidget.setMRMLScene(slicer.mrmlScene)
 
-    # Add a spacer at the botton to keep the UI flowing from top to bottom
-    spacerItem = qt.QSpacerItem(0,0, qt.QSizePolicy.Minimum, qt.QSizePolicy.MinimumExpanding)
-    self.layout.addSpacerItem(spacerItem)
+        # Add a spacer at the botton to keep the UI flowing from top to bottom
+        spacerItem = qt.QSpacerItem(0, 0, qt.QSizePolicy.Minimum, qt.QSizePolicy.MinimumExpanding)
+        self.layout.addSpacerItem(spacerItem)
 
-    # Create logic class. Logic implements all computations that should be possible to run
-    # in batch mode, without a graphical user interface.
-    self.logic = LiverLogic()
+        # Create logic class. Logic implements all computations that should be possible to run
+        # in batch mode, without a graphical user interface.
+        self.logic = LiverLogic()
 
-    # # Enable the use of FXAA (antialiasing)
-    if not slicer.app.commandOptions().noMainWindow:
-      renderer = slicer.app.layoutManager().threeDWidget(0).threeDView().renderWindow().GetRenderers().GetFirstRenderer()
-      renderer.UseFXAAOn()
+        # # Enable the use of FXAA (antialiasing)
+        if not slicer.app.commandOptions().noMainWindow:
+            renderer = slicer.app.layoutManager().threeDWidget(
+                0).threeDView().renderWindow().GetRenderers().GetFirstRenderer()
+            renderer.UseFXAAOn()
 
-    # Configure uncertainty margin combo box
-    self.resectionsWidget.UncertaintyMarginComboBox.addItems(['Custom', 'Max. Spacing', 'RMS Spacing'])
+        # Configure uncertainty margin combo box
+        self.resectionsWidget.UncertaintyMarginComboBox.addItems(['Custom', 'Max. Spacing', 'RMS Spacing'])
 
-    # Connections
-    self.distanceMapsWidget.TumorLabelMapComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onDistanceMapParameterChanged)
-    self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onDistanceMapParameterChanged)
-    self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap', 'True')
-    self.distanceMapsWidget.OutputDistanceMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onDistanceMapParameterChanged)
-    self.distanceMapsWidget.OutputDistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap', 'True')
-    self.distanceMapsWidget.ComputeDistanceMapsPushButton.connect('clicked(bool)', self.onComputeDistanceMapButtonClicked)
-    self.resectionsWidget.ResectionNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onResectionNodeChanged)
-    self.resectionsWidget.DistanceMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onResectionDistanceMapNodeChanged)
-    self.resectionsWidget.DistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap', 'True')
-    self.resectionsWidget.DistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'Computed', 'True')
-    self.resectionsWidget.LiverModelNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onResectionLiverModelNodeChanged)
-    self.resectionsWidget.ResectionColorPickerButton.connect('colorChanged(QColor)', self.onResectionColorChanged)
-    self.resectionsWidget.ResectionOpacityDoubleSlider.connect('valueChanged(double)', self.onResectionOpacityChanged)
-    self.resectionsWidget.ResectionOpacityDoubleSpinBox.connect('valueChanged(double)', self.onResectionOpacityChanged)
-    self.resectionsWidget.ResectionMarginSpinBox.connect('valueChanged(double)', self.onResectionMarginChanged)
-    self.resectionsWidget.ResectionMarginColorPickerButton.connect('colorChanged(QColor)', self.onResectionMarginColorChanged)
-    self.resectionsWidget.ResectionGridColorPickerButton.connect('colorChanged(QColor)', self.onResectionGridColorChanged)
-    self.resectionsWidget.GridDivisionsDoubleSlider.connect('valueChanged(double)', self.onGridDivisionsChanged)
-    self.resectionsWidget.GridThicknessDoubleSlider.connect('valueChanged(double)', self.onGridThicknessChanged)
-    self.resectionsWidget.ResectionLockCheckBox.connect('stateChanged(int)', self.onResectionLockChanged)
-    self.resectionsWidget.UncertaintyMarginSpinBox.connect('valueChanged(double)', self.onUncertaintyMarginChanged)
-    self.resectionsWidget.UncertaintyMarginColorPickerButton.connect('colorChanged(QColor)', self.onUncertaintyMarginColorChanged)
-    self.resectionsWidget.UncertaintyMarginComboBox.connect('currentIndexChanged(int)', self.onUncertaintyMaginComboBoxChanged)
-    self.resectionsWidget.InterpolatedMarginsCheckBox.connect('stateChanged(int)', self.onInterpolatedMarginsChanged)
+        # Connections
+        self.distanceMapsWidget.TumorLabelMapComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
+                                                              self.onDistanceMapParameterChanged)
+        self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
+                                                                       self.onDistanceMapParameterChanged)
+        self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap',
+                                                                            'True')
+        self.distanceMapsWidget.OutputDistanceMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
+                                                                      self.onDistanceMapParameterChanged)
+        self.distanceMapsWidget.OutputDistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap',
+                                                                           'True')
+        self.distanceMapsWidget.ComputeDistanceMapsPushButton.connect('clicked(bool)',
+                                                                      self.onComputeDistanceMapButtonClicked)
+        self.resectionsWidget.ResectionNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
+                                                            self.onResectionNodeChanged)
+        self.resectionsWidget.DistanceMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
+                                                              self.onResectionDistanceMapNodeChanged)
+        self.resectionsWidget.DistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap', 'True')
+        self.resectionsWidget.DistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'Computed', 'True')
+        self.resectionsWidget.LiverModelNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
+                                                             self.onResectionLiverModelNodeChanged)
+        self.resectionsWidget.ResectionColorPickerButton.connect('colorChanged(QColor)', self.onResectionColorChanged)
+        self.resectionsWidget.ResectionOpacityDoubleSlider.connect('valueChanged(double)',
+                                                                   self.onResectionOpacityChanged)
+        self.resectionsWidget.ResectionOpacityDoubleSpinBox.connect('valueChanged(double)',
+                                                                    self.onResectionOpacityChanged)
+        self.resectionsWidget.ResectionMarginSpinBox.connect('valueChanged(double)', self.onResectionMarginChanged)
+        self.resectionsWidget.ResectionMarginColorPickerButton.connect('colorChanged(QColor)',
+                                                                       self.onResectionMarginColorChanged)
+        self.resectionsWidget.ResectionGridColorPickerButton.connect('colorChanged(QColor)',
+                                                                     self.onResectionGridColorChanged)
+        self.resectionsWidget.GridDivisionsDoubleSlider.connect('valueChanged(double)', self.onGridDivisionsChanged)
+        self.resectionsWidget.GridThicknessDoubleSlider.connect('valueChanged(double)', self.onGridThicknessChanged)
+        self.resectionsWidget.ResectionLockCheckBox.connect('stateChanged(int)', self.onResectionLockChanged)
+        self.resectionsWidget.UncertaintyMarginSpinBox.connect('valueChanged(double)', self.onUncertaintyMarginChanged)
+        self.resectionsWidget.UncertaintyMarginColorPickerButton.connect('colorChanged(QColor)',
+                                                                         self.onUncertaintyMarginColorChanged)
+        self.resectionsWidget.UncertaintyMarginComboBox.connect('currentIndexChanged(int)',
+                                                                self.onUncertaintyMaginComboBoxChanged)
+        self.resectionsWidget.InterpolatedMarginsCheckBox.connect('stateChanged(int)',
+                                                                  self.onInterpolatedMarginsChanged)
 
-  def onDistanceMapParameterChanged(self):
-    """
-    This function is triggered whenever any parameter of the distance maps are changed
-    """
-    node1 = self.distanceMapsWidget.TumorLabelMapComboBox.currentNode()
-    node2 = self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.currentNode()
-    node3 = self.distanceMapsWidget.OutputDistanceMapNodeComboBox.currentNode()
-    self.distanceMapsWidget.ComputeDistanceMapsPushButton.setEnabled(None not in [node1, node2, node3])
+        self.resectionsWidget.Resection2DCheckBox.connect('stateChanged(int)', self.onResection2DChanged)
 
-  def onResectionNodeChanged(self):
-    """
-    This function is triggered when the resectio node combo box changes. It
-    adjust the rest of the UI according to the parameters contained in the node.
-    """
-    activeResectionNode = self.resectionsWidget.ResectionNodeComboBox.currentNode()
+    def onDistanceMapParameterChanged(self):
+        """
+        This function is triggered whenever any parameter of the distance maps are changed
+        """
+        node1 = self.distanceMapsWidget.TumorLabelMapComboBox.currentNode()
+        node2 = self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.currentNode()
+        node3 = self.distanceMapsWidget.OutputDistanceMapNodeComboBox.currentNode()
+        self.distanceMapsWidget.ComputeDistanceMapsPushButton.setEnabled(None not in [node1, node2, node3])
 
-    # If there is an effective change of resection, update other widgets with resection parameters
-    if activeResectionNode is not self._currentResectionNode:
+    def onResectionNodeChanged(self):
+        """
+        This function is triggered when the resectio node combo box changes. It
+        adjust the rest of the UI according to the parameters contained in the node.
+        """
+        activeResectionNode = self.resectionsWidget.ResectionNodeComboBox.currentNode()
 
-      self.resectionsWidget.ResectionParametersGroupBox.setEnabled(activeResectionNode is not None)
+        # If there is an effective change of resection, update other widgets with resection parameters
+        if activeResectionNode is not self._currentResectionNode:
 
-      lvLogic = slicer.modules.liverresections.logic()
+            self.resectionsWidget.ResectionParametersGroupBox.setEnabled(activeResectionNode is not None)
 
-      if activeResectionNode is not None:
+            lvLogic = slicer.modules.liverresections.logic()
 
-        self.resectionsWidget.LiverModelNodeComboBox.blockSignals(True)
-        self.resectionsWidget.LiverModelNodeComboBox.setCurrentNode(activeResectionNode.GetTargetOrganModelNode())
-        self.resectionsWidget.LiverModelNodeComboBox.blockSignals(False)
+            if activeResectionNode is not None:
 
-        self.resectionsWidget.DistanceMapNodeComboBox.blockSignals(True)
-        self.resectionsWidget.DistanceMapNodeComboBox.setCurrentNode(activeResectionNode.GetDistanceMapVolumeNode())
-        self.resectionsWidget.DistanceMapNodeComboBox.blockSignals(False)
+                self.resectionsWidget.LiverModelNodeComboBox.blockSignals(True)
+                self.resectionsWidget.LiverModelNodeComboBox.setCurrentNode(
+                    activeResectionNode.GetTargetOrganModelNode())
+                self.resectionsWidget.LiverModelNodeComboBox.blockSignals(False)
 
-        self.resectionsWidget.ResectionColorPickerButton.blockSignals(True)
-        color = activeResectionNode.GetResectionColor()
-        self.resectionsWidget.ResectionColorPickerButton.setColor(qt.QColor.fromRgbF(color[0], color[1], color[2]))
-        self.resectionsWidget.ResectionColorPickerButton.blockSignals(False)
+                self.resectionsWidget.DistanceMapNodeComboBox.blockSignals(True)
+                self.resectionsWidget.DistanceMapNodeComboBox.setCurrentNode(
+                    activeResectionNode.GetDistanceMapVolumeNode())
+                self.resectionsWidget.DistanceMapNodeComboBox.blockSignals(False)
 
-        self.resectionsWidget.ResectionMarginSpinBox.blockSignals(True)
-        self.resectionsWidget.ResectionMarginSpinBox.setValue(activeResectionNode.GetResectionMargin())
-        self.resectionsWidget.ResectionMarginSpinBox.minimum = activeResectionNode.GetUncertaintyMargin()
-        self.resectionsWidget.ResectionMarginSpinBox.blockSignals(False)
+                self.resectionsWidget.ResectionColorPickerButton.blockSignals(True)
+                color = activeResectionNode.GetResectionColor()
+                self.resectionsWidget.ResectionColorPickerButton.setColor(
+                    qt.QColor.fromRgbF(color[0], color[1], color[2]))
+                self.resectionsWidget.ResectionColorPickerButton.blockSignals(False)
 
-        self.resectionsWidget.ResectionMarginColorPickerButton.blockSignals(True)
-        color = activeResectionNode.GetResectionMarginColor()
-        self.resectionsWidget.ResectionMarginColorPickerButton.setColor(qt.QColor.fromRgbF(color[0], color[1], color[2]))
-        self.resectionsWidget.ResectionMarginColorPickerButton.blockSignals(False)
+                self.resectionsWidget.ResectionMarginSpinBox.blockSignals(True)
+                self.resectionsWidget.ResectionMarginSpinBox.setValue(activeResectionNode.GetResectionMargin())
+                self.resectionsWidget.ResectionMarginSpinBox.minimum = activeResectionNode.GetUncertaintyMargin()
+                self.resectionsWidget.ResectionMarginSpinBox.blockSignals(False)
 
-        self.resectionsWidget.ResectionOpacityDoubleSlider.blockSignals(True)
-        self.resectionsWidget.ResectionOpacityDoubleSlider.setValue(activeResectionNode.GetResectionOpacity())
-        self.resectionsWidget.ResectionOpacityDoubleSlider.blockSignals(False)
+                self.resectionsWidget.ResectionMarginColorPickerButton.blockSignals(True)
+                color = activeResectionNode.GetResectionMarginColor()
+                self.resectionsWidget.ResectionMarginColorPickerButton.setColor(
+                    qt.QColor.fromRgbF(color[0], color[1], color[2]))
+                self.resectionsWidget.ResectionMarginColorPickerButton.blockSignals(False)
 
-        self.resectionsWidget.ResectionOpacityDoubleSpinBox.blockSignals(True)
-        self.resectionsWidget.ResectionOpacityDoubleSpinBox.setValue(activeResectionNode.GetResectionOpacity())
-        self.resectionsWidget.ResectionOpacityDoubleSpinBox.blockSignals(False)
+                self.resectionsWidget.ResectionOpacityDoubleSlider.blockSignals(True)
+                self.resectionsWidget.ResectionOpacityDoubleSlider.setValue(activeResectionNode.GetResectionOpacity())
+                self.resectionsWidget.ResectionOpacityDoubleSlider.blockSignals(False)
 
-        self.resectionsWidget.ResectionGridColorPickerButton.blockSignals(True)
-        color = activeResectionNode.GetResectionGridColor()
-        self.resectionsWidget.ResectionGridColorPickerButton.setColor(qt.QColor.fromRgbF(color[0], color[1], color[2]))
-        self.resectionsWidget.ResectionGridColorPickerButton.blockSignals(False)
+                self.resectionsWidget.ResectionOpacityDoubleSpinBox.blockSignals(True)
+                self.resectionsWidget.ResectionOpacityDoubleSpinBox.setValue(activeResectionNode.GetResectionOpacity())
+                self.resectionsWidget.ResectionOpacityDoubleSpinBox.blockSignals(False)
 
-        self.resectionsWidget.ResectionLockCheckBox.blockSignals(True)
-        if (activeResectionNode.GetWidgetVisibility()):
-          self.resectionsWidget.ResectionLockCheckBox.setCheckState(0)
-        else:
-          self.resectionsWidget.ResectionLockCheckBox.setCheckState(2)
-        self.resectionsWidget.ResectionLockCheckBox.blockSignals(False)
+                self.resectionsWidget.ResectionGridColorPickerButton.blockSignals(True)
+                color = activeResectionNode.GetResectionGridColor()
+                self.resectionsWidget.ResectionGridColorPickerButton.setColor(
+                    qt.QColor.fromRgbF(color[0], color[1], color[2]))
+                self.resectionsWidget.ResectionGridColorPickerButton.blockSignals(False)
 
-        self.resectionsWidget.UncertaintyMarginSpinBox.blockSignals(True)
-        self.resectionsWidget.UncertaintyMarginSpinBox.setValue(activeResectionNode.GetUncertaintyMargin())
-        self.resectionsWidget.UncertaintyMarginSpinBox.blockSignals(False)
+                self.resectionsWidget.UncertaintyMarginSpinBox.blockSignals(True)
+                self.resectionsWidget.UncertaintyMarginSpinBox.setValue(activeResectionNode.GetUncertaintyMargin())
+                self.resectionsWidget.UncertaintyMarginSpinBox.blockSignals(False)
 
-        self.resectionsWidget.UncertaintyMarginColorPickerButton.blockSignals(True)
-        color = activeResectionNode.GetUncertaintyMarginColor()
-        self.resectionsWidget.UncertaintyMarginColorPickerButton.setColor(qt.QColor.fromRgbF(color[0], color[1], color[2]))
-        self.resectionsWidget.UncertaintyMarginColorPickerButton.blockSignals(False)
+                self.resectionsWidget.UncertaintyMarginColorPickerButton.blockSignals(True)
+                color = activeResectionNode.GetUncertaintyMarginColor()
+                self.resectionsWidget.UncertaintyMarginColorPickerButton.setColor(
+                    qt.QColor.fromRgbF(color[0], color[1], color[2]))
+                self.resectionsWidget.UncertaintyMarginColorPickerButton.blockSignals(False)
 
-        self.resectionsWidget.ResectionLockCheckBox.blockSignals(True)
-        if activeResectionNode.GetWidgetVisibility():
-          self.resectionsWidget.ResectionLockCheckBox.setCheckState(0) # Unchecked
-        else:
-          self.resectionsWidget.ResectionLockCheckBox.setCheckState(2) # Checked
-        self.resectionsWidget.ResectionLockCheckBox.blockSignals(False)
+                self.resectionsWidget.Resection2DCheckBox.blockSignals(True)
+                if (activeResectionNode.GetWidgetVisibility()):
+                    self.resectionsWidget.Resection2DCheckBox.setCheckState(0)
+                else:
+                    self.resectionsWidget.Resection2DCheckBox.setCheckState(2)
+                self.resectionsWidget.Resection2DCheckBox.blockSignals(False)
 
-        self.resectionsWidget.InterpolatedMarginsCheckBox.blockSignals(True)
-        if activeResectionNode.GetInterpolatedMargins():
-          self.resectionsWidget.InterpolatedMarginsCheckBox.setCheckState(2) # Checked
-        else:
-          self.resectionsWidget.InterpolatedMarginsCheckBox.setCheckState(0) # Unchecked
-        self.resectionsWidget.InterpolatedMarginsCheckBox.blockSignals(False)
+                self.resectionsWidget.ResectionLockCheckBox.blockSignals(True)
+                if activeResectionNode.GetWidgetVisibility():
+                    self.resectionsWidget.ResectionLockCheckBox.setCheckState(0)  # Unchecked
+                else:
+                    self.resectionsWidget.ResectionLockCheckBox.setCheckState(2)  # Checked
+                self.resectionsWidget.ResectionLockCheckBox.blockSignals(False)
 
-        if activeResectionNode.GetState()  == activeResectionNode.Initialization: # Show initialization
-          lvLogic.HideBezierSurfaceMarkupFromResection(self._currentResectionNode)
-          lvLogic.HideInitializationMarkupFromResection(self._currentResectionNode)
-          lvLogic.ShowInitializationMarkupFromResection(activeResectionNode)
-          lvLogic.ShowBezierSurfaceMarkupFromResection(activeResectionNode)
+                self.resectionsWidget.InterpolatedMarginsCheckBox.blockSignals(True)
+                if activeResectionNode.GetInterpolatedMargins():
+                    self.resectionsWidget.InterpolatedMarginsCheckBox.setCheckState(2)  # Checked
+                else:
+                    self.resectionsWidget.InterpolatedMarginsCheckBox.setCheckState(0)  # Unchecked
+                self.resectionsWidget.InterpolatedMarginsCheckBox.blockSignals(False)
 
-        elif activeResectionNode.GetState() == activeResectionNode.Deformation: # Show bezier surface
-          lvLogic.HideInitializationMarkupFromResection(self._currentResectionNode)
-          lvLogic.HideBezierSurfaceMarkupFromResection(self._currentResectionNode)
-          lvLogic.ShowBezierSurfaceMarkupFromResection(activeResectionNode)
-      else:
-          lvLogic.HideBezierSurfaceMarkupFromResection(self._currentResectionNode)
-          lvLogic.HideInitializationMarkupFromResection(self._currentResectionNode)
-          renderers = slicer.app.layoutManager().threeDWidget(0).threeDView().renderWindow().GetRenderers()
-          if renderers.GetNumberOfItems()==5:
-            renderers.RemoveItem(4)
+                if activeResectionNode.GetState() == activeResectionNode.Initialization:  # Show initialization
+                    lvLogic.HideBezierSurfaceMarkupFromResection(self._currentResectionNode)
+                    lvLogic.HideInitializationMarkupFromResection(self._currentResectionNode)
+                    lvLogic.ShowInitializationMarkupFromResection(activeResectionNode)
+                    lvLogic.ShowBezierSurfaceMarkupFromResection(activeResectionNode)
 
-    self._currentResectionNode = activeResectionNode
+                elif activeResectionNode.GetState() == activeResectionNode.Deformation:  # Show bezier surface
+                    lvLogic.HideInitializationMarkupFromResection(self._currentResectionNode)
+                    lvLogic.HideBezierSurfaceMarkupFromResection(self._currentResectionNode)
+                    lvLogic.ShowBezierSurfaceMarkupFromResection(activeResectionNode)
+            else:
+                lvLogic.HideBezierSurfaceMarkupFromResection(self._currentResectionNode)
+                lvLogic.HideInitializationMarkupFromResection(self._currentResectionNode)
+                renderers = slicer.app.layoutManager().threeDWidget(0).threeDView().renderWindow().GetRenderers()
+                if renderers.GetNumberOfItems() == 5:
+                    renderers.RemoveItem(4)
 
-  def onResectionDistanceMapNodeChanged(self):
-    """
-    This function is called when the resection distance map selector changes
-    """
-    if self._currentResectionNode is not None:
+        self._currentResectionNode = activeResectionNode
 
-      distanceMapNode = self.resectionsWidget.DistanceMapNodeComboBox.currentNode()
-      self._currentResectionNode.SetDistanceMapVolumeNode(self.resectionsWidget.DistanceMapNodeComboBox.currentNode())
-      self.resectionsWidget.ResectionMarginGroupBox.setEnabled(distanceMapNode is not None)
-      self.resectionsWidget.UncertaintyMarginGroupBox.setEnabled(distanceMapNode is not None)
-      self.resectionsWidget.ResectionPreviewGroupBox.setEnabled(distanceMapNode is not None)
+    def onResectionDistanceMapNodeChanged(self):
+        """
+        This function is called when the resection distance map selector changes
+        """
+        if self._currentResectionNode is not None:
+            distanceMapNode = self.resectionsWidget.DistanceMapNodeComboBox.currentNode()
+            self._currentResectionNode.SetDistanceMapVolumeNode(
+                self.resectionsWidget.DistanceMapNodeComboBox.currentNode())
+            self.resectionsWidget.ResectionMarginGroupBox.setEnabled(distanceMapNode is not None)
+            self.resectionsWidget.UncertaintyMarginGroupBox.setEnabled(distanceMapNode is not None)
+            self.resectionsWidget.ResectionPreviewGroupBox.setEnabled(distanceMapNode is not None)
+            self.resectionsWidget.Resection2DGroupBox.setEnabled(distanceMapNode is not None)
 
-  def onResectionLiverModelNodeChanged(self):
-    """
-    This function is called when the resection liver model node changes
-    """
-    if self._currentResectionNode is not None:
-      modelNode = self.resectionsWidget.LiverModelNodeComboBox.currentNode()
-      self._currentResectionNode.SetTargetOrganModelNode(modelNode)
-      self.resectionsWidget.ResectionVisualizationGroupBox.setEnabled(modelNode is not None)
-      self.resectionsWidget.GridGroupBox.setEnabled(modelNode is not None)
+    def onResectionLiverModelNodeChanged(self):
+        """
+        This function is called when the resection liver model node changes
+        """
+        if self._currentResectionNode is not None:
+            modelNode = self.resectionsWidget.LiverModelNodeComboBox.currentNode()
+            self._currentResectionNode.SetTargetOrganModelNode(modelNode)
+            self.resectionsWidget.ResectionVisualizationGroupBox.setEnabled(modelNode is not None)
+            self.resectionsWidget.GridGroupBox.setEnabled(modelNode is not None)
 
-  def onResectionMarginChanged(self):
-    """
-    This function is called when the resection margin spinbox changes.
-    """
-    if self._currentResectionNode is not None:
-      self._currentResectionNode.SetResectionMargin(self.resectionsWidget.ResectionMarginSpinBox.value)
-      self.updateTotalMargin()
+    def onResectionMarginChanged(self):
+        """
+        This function is called when the resection margin spinbox changes.
+        """
+        if self._currentResectionNode is not None:
+            self._currentResectionNode.SetResectionMargin(self.resectionsWidget.ResectionMarginSpinBox.value)
+            self.updateTotalMargin()
 
-  def onUncertaintyMarginChanged(self):
-    """
-    This function is called when the resection margin spinbox changes.
-    """
-    if self._currentResectionNode is not None:
-      self._currentResectionNode.SetUncertaintyMargin(self.resectionsWidget.UncertaintyMarginSpinBox.value)
-      self.resectionsWidget.ResectionMarginSpinBox.minimum = self._currentResectionNode.GetUncertaintyMargin()
-      self.updateTotalMargin()
+    def onUncertaintyMarginChanged(self):
+        """
+        This function is called when the resection margin spinbox changes.
+        """
+        if self._currentResectionNode is not None:
+            self._currentResectionNode.SetUncertaintyMargin(self.resectionsWidget.UncertaintyMarginSpinBox.value)
+            self.resectionsWidget.ResectionMarginSpinBox.minimum = self._currentResectionNode.GetUncertaintyMargin()
+            self.updateTotalMargin()
 
-  def updateTotalMargin(self):
-    uncertainty = self._currentResectionNode.GetUncertaintyMargin()
-    resection = self._currentResectionNode.GetResectionMargin()
-    self.resectionsWidget.TotalMarginLabel.setText('{:.2f} mm'.format(resection+uncertainty))
+    def updateTotalMargin(self):
+        uncertainty = self._currentResectionNode.GetUncertaintyMargin()
+        resection = self._currentResectionNode.GetResectionMargin()
+        self.resectionsWidget.TotalMarginLabel.setText('{:.2f} mm'.format(resection + uncertainty))
 
-  def onResectionLockChanged(self):
-    """
-    This function is called when the resection margin spinbox changes.
-    """
-    if self._currentResectionNode is not None:
-      self._currentResectionNode.SetClipOut(self.resectionsWidget.ResectionLockCheckBox.isChecked())
-      self._currentResectionNode.SetWidgetVisibility(not self.resectionsWidget.ResectionLockCheckBox.isChecked())
+    def onResectionLockChanged(self):
+        """
+        This function is called when the resection margin spinbox changes.
+        """
+        if self._currentResectionNode is not None:
+            self._currentResectionNode.SetClipOut(self.resectionsWidget.ResectionLockCheckBox.isChecked())
+            self._currentResectionNode.SetWidgetVisibility(not self.resectionsWidget.ResectionLockCheckBox.isChecked())
 
-  def onComputeDistanceMapButtonClicked(self):
-    """
-    This function is called when the distance map calculation button is pressed
-    """
-    tumorLabelMapNode = self.distanceMapsWidget.TumorLabelMapComboBox.currentNode()
-    parenchymaLabelMapNode = self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.currentNode()
-    outputVolumeNode = self.distanceMapsWidget.OutputDistanceMapNodeComboBox.currentNode()
+    def onResection2DChanged(self):
+        """
+        This function is called when the resection2D checkbox changes.
+        """
+        if self._currentResectionNode is not None:
+            self._currentResectionNode.SetShowResection2D(self.resectionsWidget.Resection2DCheckBox.isChecked())
+            renderers = slicer.app.layoutManager().threeDWidget(0).threeDView().renderWindow().GetRenderers()
+            if self.resectionsWidget.Resection2DCheckBox.isChecked()==0 and renderers.GetNumberOfItems()==5:
+                renderers.RemoveItem(4)
 
-    slicer.app.pauseRender()
-    qt.QApplication.setOverrideCursor(qt.Qt.WaitCursor)
-    self.logic.computeDistanceMaps(tumorLabelMapNode, parenchymaLabelMapNode, outputVolumeNode)
-    slicer.app.resumeRender()
-    qt.QApplication.restoreOverrideCursor()
-    slicer.util.showStatusMessage('')
+    def onComputeDistanceMapButtonClicked(self):
+        """
+        This function is called when the distance map calculation button is pressed
+        """
+        tumorLabelMapNode = self.distanceMapsWidget.TumorLabelMapComboBox.currentNode()
+        parenchymaLabelMapNode = self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.currentNode()
+        outputVolumeNode = self.distanceMapsWidget.OutputDistanceMapNodeComboBox.currentNode()
 
-  def onUncertaintyMaginComboBoxChanged(self):
-    """
-    This function is called whenever the uncertainty combo box is changed
-    """
-    uncertaintyMode = self.resectionsWidget.UncertaintyMarginComboBox.currentText
-    self.resectionsWidget.UncertaintyMarginSpinBox.setEnabled(uncertaintyMode == 'Custom')
-    distanceMap = self.resectionsWidget.DistanceMapNodeComboBox.currentNode()
+        slicer.app.pauseRender()
+        qt.QApplication.setOverrideCursor(qt.Qt.WaitCursor)
+        self.logic.computeDistanceMaps(tumorLabelMapNode, parenchymaLabelMapNode, outputVolumeNode)
+        slicer.app.resumeRender()
+        qt.QApplication.restoreOverrideCursor()
+        slicer.util.showStatusMessage('')
 
-    if uncertaintyMode == 'Max. Spacing':
-      if distanceMap is not None:
-        maxSpacing = max(distanceMap.GetSpacing())
-        self.resectionsWidget.UncertaintyMarginSpinBox.setValue(maxSpacing)
+    def onUncertaintyMaginComboBoxChanged(self):
+        """
+        This function is called whenever the uncertainty combo box is changed
+        """
+        uncertaintyMode = self.resectionsWidget.UncertaintyMarginComboBox.currentText
+        self.resectionsWidget.UncertaintyMarginSpinBox.setEnabled(uncertaintyMode == 'Custom')
+        distanceMap = self.resectionsWidget.DistanceMapNodeComboBox.currentNode()
 
-    if uncertaintyMode == 'RMS Spacing':
-      if distanceMap is not None:
-        rmsSpacing = np.sqrt(np.mean(np.square(distanceMap.GetSpacing())))
-        self.resectionsWidget.UncertaintyMarginSpinBox.setValue(rmsSpacing)
+        if uncertaintyMode == 'Max. Spacing':
+            if distanceMap is not None:
+                maxSpacing = max(distanceMap.GetSpacing())
+                self.resectionsWidget.UncertaintyMarginSpinBox.setValue(maxSpacing)
 
-  def onInterpolatedMarginsChanged(self):
-    """
-    This function is called whenever the interpolated contour has changed
-    """
-    if self._currentResectionNode is not None:
-      self._currentResectionNode.SetInterpolatedMargins(self.resectionsWidget.InterpolatedMarginsCheckBox.isChecked())
+        if uncertaintyMode == 'RMS Spacing':
+            if distanceMap is not None:
+                rmsSpacing = np.sqrt(np.mean(np.square(distanceMap.GetSpacing())))
+                self.resectionsWidget.UncertaintyMarginSpinBox.setValue(rmsSpacing)
 
-  def onResectionColorChanged(self):
-    """
-    This function is called whenever the resection margin color has changed
-    """
-    if self._currentResectionNode is not None:
-      color = self.resectionsWidget.ResectionColorPickerButton.color
-      rgbF = [color.redF(),color.greenF(),color.blueF()]
-      self._currentResectionNode.SetResectionColor(rgbF)
+    def onInterpolatedMarginsChanged(self):
+        """
+        This function is called whenever the interpolated contour has changed
+        """
+        if self._currentResectionNode is not None:
+            self._currentResectionNode.SetInterpolatedMargins(
+                self.resectionsWidget.InterpolatedMarginsCheckBox.isChecked())
 
-  def onResectionGridColorChanged(self):
-    """
-    This function is called whenever the  grid color has changed
-    """
-    if self._currentResectionNode is not None:
-      color = self.resectionsWidget.ResectionGridColorPickerButton.color
-      rgbF = [color.redF(),color.greenF(),color.blueF()]
-      self._currentResectionNode.SetResectionGridColor(rgbF)
+    def onResectionColorChanged(self):
+        """
+        This function is called whenever the resection margin color has changed
+        """
+        if self._currentResectionNode is not None:
+            color = self.resectionsWidget.ResectionColorPickerButton.color
+            rgbF = [color.redF(), color.greenF(), color.blueF()]
+            self._currentResectionNode.SetResectionColor(rgbF)
 
-  def onResectionOpacityChanged(self):
-    """
-    This function is called whenever the resection opacity has changed
-    """
-    if self._currentResectionNode is not None:
-      self._currentResectionNode.SetResectionOpacity(self.resectionsWidget.ResectionOpacityDoubleSpinBox.value)
+    def onResectionGridColorChanged(self):
+        """
+        This function is called whenever the  grid color has changed
+        """
+        if self._currentResectionNode is not None:
+            color = self.resectionsWidget.ResectionGridColorPickerButton.color
+            rgbF = [color.redF(), color.greenF(), color.blueF()]
+            self._currentResectionNode.SetResectionGridColor(rgbF)
 
-  def onResectionMarginColorChanged(self):
-    """
-    This function is called whenever the resection margin color has changed
-    """
-    if self._currentResectionNode is not None:
-      color = self.resectionsWidget.ResectionMarginColorPickerButton.color
-      rgbF = [color.redF(),color.greenF(),color.blueF()]
-      self._currentResectionNode.SetResectionMarginColor(rgbF)
+    def onResectionOpacityChanged(self):
+        """
+        This function is called whenever the resection opacity has changed
+        """
+        if self._currentResectionNode is not None:
+            self._currentResectionNode.SetResectionOpacity(self.resectionsWidget.ResectionOpacityDoubleSpinBox.value)
 
-  def onUncertaintyMarginColorChanged(self):
-    """
-    This function is called whenever the resection margin color has changed
-    """
-    if self._currentResectionNode is not None:
-      color = self.resectionsWidget.UncertaintyMarginColorPickerButton.color
-      rgbF = [color.redF(),color.greenF(),color.blueF()]
-      self._currentResectionNode.SetUncertaintyMarginColor(rgbF)
+    def onResectionMarginColorChanged(self):
+        """
+        This function is called whenever the resection margin color has changed
+        """
+        if self._currentResectionNode is not None:
+            color = self.resectionsWidget.ResectionMarginColorPickerButton.color
+            rgbF = [color.redF(), color.greenF(), color.blueF()]
+            self._currentResectionNode.SetResectionMarginColor(rgbF)
 
-  def onGridDivisionsChanged(self):
-    """
-    This function is called whenever the resection grid divisions has changed
-    """
-    if self._currentResectionNode is not None:
-      self._currentResectionNode.SetGridDivisions(self.resectionsWidget.GridDivisionsDoubleSlider.value)
+    def onUncertaintyMarginColorChanged(self):
+        """
+        This function is called whenever the resection margin color has changed
+        """
+        if self._currentResectionNode is not None:
+            color = self.resectionsWidget.UncertaintyMarginColorPickerButton.color
+            rgbF = [color.redF(), color.greenF(), color.blueF()]
+            self._currentResectionNode.SetUncertaintyMarginColor(rgbF)
 
-  def onGridThicknessChanged(self):
-    """
-    This function is called whenever the resection grid thickness has changed
-    """
-    if self._currentResectionNode is not None:
-      self._currentResectionNode.SetGridThickness(self.resectionsWidget.GridThicknessDoubleSlider.value)
+    def onGridDivisionsChanged(self):
+        """
+        This function is called whenever the resection grid divisions has changed
+        """
+        if self._currentResectionNode is not None:
+            self._currentResectionNode.SetGridDivisions(self.resectionsWidget.GridDivisionsDoubleSlider.value)
 
-  def cleanup(self):
-    """
-    Called when the application closes and the module widget is destroyed.
-    """
-    pass
+    def onGridThicknessChanged(self):
+        """
+        This function is called whenever the resection grid thickness has changed
+        """
+        if self._currentResectionNode is not None:
+            self._currentResectionNode.SetGridThickness(self.resectionsWidget.GridThicknessDoubleSlider.value)
 
-  def enter(self):
-    """
-    Called each time the user opens this module.
-    """
-    pass
+    def cleanup(self):
+        """
+        Called when the application closes and the module widget is destroyed.
+        """
+        pass
 
-  def exit(self):
-    """
-    Called each time the user opens a different module.
-    """
-    pass
+    def enter(self):
+        """
+        Called each time the user opens this module.
+        """
+        pass
+
+    def exit(self):
+        """
+        Called each time the user opens a different module.
+        """
+        pass
+
 
 #
 # LiverLogic
 #
 
 class LiverLogic(ScriptedLoadableModuleLogic):
-  """This class should implement all the actual
-  computation done by your module.  The interface
-  should be such that other python code can import
-  this class and make use of the functionality without
-  requiring an instance of the Widget.
-  Uses ScriptedLoadableModuleLogic base class, available at:
-  https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
-  """
-
-  def __init__(self):
+    """This class should implement all the actual
+    computation done by your module.  The interface
+    should be such that other python code can import
+    this class and make use of the functionality without
+    requiring an instance of the Widget.
+    Uses ScriptedLoadableModuleLogic base class, available at:
+    https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
     """
-    Called when the logic class is instantiated. Can be used for initializing member variables.
-    """
-    ScriptedLoadableModuleLogic.__init__(self)
 
-  def computeDistanceMaps(self, tumorNode, parenchymaNode, outputNode):
+    def __init__(self):
+        """
+        Called when the logic class is instantiated. Can be used for initializing member variables.
+        """
+        ScriptedLoadableModuleLogic.__init__(self)
 
-    if outputNode is not None:
-      import sitkUtils
-      import SimpleITK as sitk
+    def computeDistanceMaps(self, tumorNode, parenchymaNode, outputNode):
+        if outputNode is not None:
+            import sitkUtils
+            import SimpleITK as sitk
 
-      # Compute tumor distance map
-      tumorImage = sitkUtils.PullVolumeFromSlicer(tumorNode)
-      tumorDistanceImage = sitk.SignedMaurerDistanceMap(tumorImage,False,False,True)
-      logging.debug("Computing Tumor Distance Map...")
+            # Compute tumor distance map
+            tumorImage = sitkUtils.PullVolumeFromSlicer(tumorNode)
+            tumorDistanceImage = sitk.SignedMaurerDistanceMap(tumorImage, False, False, True)
+            logging.debug("Computing Tumor Distance Map...")
 
-      # Compute tumor distance map
-      parenchymaImage = sitkUtils.PullVolumeFromSlicer(parenchymaNode)
-      parenchymaDistanceImage = sitk.SignedMaurerDistanceMap(parenchymaImage,False,False,True)
-      logging.debug("Computing Parenchyma Distance Map...")
+            # Compute tumor distance map
+            parenchymaImage = sitkUtils.PullVolumeFromSlicer(parenchymaNode)
+            parenchymaDistanceImage = sitk.SignedMaurerDistanceMap(parenchymaImage, False, False, True)
+            logging.debug("Computing Parenchyma Distance Map...")
 
-      #Combine distance maps
-      compositeDistanceMap = sitk.Compose(tumorDistanceImage,parenchymaDistanceImage)
-      sitkUtils.PushVolumeToSlicer(compositeDistanceMap, targetNode = outputNode, className='vtkMRMLVectorVolumeNode')
-      outputNode.SetAttribute('DistanceMap', "True");
-      outputNode.SetAttribute('Computed', "True");
+            # Combine distance maps
+            compositeDistanceMap = sitk.Compose(tumorDistanceImage, parenchymaDistanceImage)
+            sitkUtils.PushVolumeToSlicer(compositeDistanceMap, targetNode=outputNode,
+                                         className='vtkMRMLVectorVolumeNode')
+            outputNode.SetAttribute('DistanceMap', "True");
+            outputNode.SetAttribute('Computed', "True");
+
 
 #
 # LiverTest
 #
 
 class LiverTest(ScriptedLoadableModuleTest):
-  """
-  This is the test case for your scripted module.
-  Uses ScriptedLoadableModuleTest base class, available at:
-  https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
-  """
-
-  def setUp(self):
-    """ Do whatever is needed to reset the state - typically a scene clear will be enough.
     """
-    slicer.mrmlScene.Clear()
-
-  def runTest(self):
-    """Run as few or as many tests as needed here.
+    This is the test case for your scripted module.
+    Uses ScriptedLoadableModuleTest base class, available at:
+    https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
     """
-    self.setUp()
-    self.test_Liver1()
 
-  def test_Liver1(self):
+    def setUp(self):
+        """ Do whatever is needed to reset the state - typically a scene clear will be enough.
+        """
+        slicer.mrmlScene.Clear()
 
-    pass
-    # self.delayDisplay("Starting distance map computation test")
+    def runTest(self):
+        """Run as few or as many tests as needed here.
+        """
+        self.setUp()
+        self.test_Liver1()
 
-    # liverWidget= slicer.modules.liver.widgetRepresentation()
-    # distanceCollapsibleButton = slicer.util.findChild(widget=liverWidget, name='DistanceMapsCollapsibleButton')
-    # tumorLabelMapSelector = slicer.util.findChild(widget=distanceCollapsibleButton, name='TumorLabelMapComboBox')
-    # outputDistanceMapSelector = slicer.util.findChild(widget=distanceCollapsibleButton, name='OutputVolumeComboBox')
-    # computeDistanceMapPushButton = slicer.util.findChild(widget=distanceCollapsibleButton, name='ComputeDistanceMapsPushButton')
+    def test_Liver1(self):
+        pass
+        # self.delayDisplay("Starting distance map computation test")
 
-    # self.delayDisplay("Extracting tumor labelmap from segmentation")
+        # liverWidget= slicer.modules.liver.widgetRepresentation()
+        # distanceCollapsibleButton = slicer.util.findChild(widget=liverWidget, name='DistanceMapsCollapsibleButton')
+        # tumorLabelMapSelector = slicer.util.findChild(widget=distanceCollapsibleButton, name='TumorLabelMapComboBox')
+        # outputDistanceMapSelector = slicer.util.findChild(widget=distanceCollapsibleButton, name='OutputVolumeComboBox')
+        # computeDistanceMapPushButton = slicer.util.findChild(widget=distanceCollapsibleButton, name='ComputeDistanceMapsPushButton')
 
-    # import vtkSegmentationCore as segCore
+        # self.delayDisplay("Extracting tumor labelmap from segmentation")
 
-    # labelNode = slicer.vtkMRMLLabelMapVolumeNode()
-    # slicer.mrmlScene.AddNode(labelNode)
-    # labelNode.CreateDefaultDisplayNodes()
-    # outputVolume = slicer.vtkMRMLScalarVolumeNode()
-    # slicer.mrmlScene.AddNode(outputVolume)
-    # outputVolume.CreateDefaultDisplayNodes()
-    # outputVolume.SetAttribute("DistanceMap", "True");
-    # volumeNode = slicer.util.getNode('LiverVolume000')
+        # import vtkSegmentationCore as segCore
 
-    # segmentationNode = slicer.util.getNode('LiverSegmentation000')
-    # segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(volumeNode)
-    # segmentationNode.CreateBinaryLabelmapRepresentation()
-    # segments = vtk.vtkStringArray()
-    # segments.InsertNextValue("Tumor1")
-    # segLogic = slicer.vtkSlicerSegmentationsModuleLogic
-    # segLogic.ExportSegmentsToLabelmapNode(segmentationNode, segments, labelNode, volumeNode,
-    #                                       segCore.vtkSegmentation.EXTENT_UNION_OF_EFFECTIVE_SEGMENTS_AND_REFERENCE_GEOMETRY)
+        # labelNode = slicer.vtkMRMLLabelMapVolumeNode()
+        # slicer.mrmlScene.AddNode(labelNode)
+        # labelNode.CreateDefaultDisplayNodes()
+        # outputVolume = slicer.vtkMRMLScalarVolumeNode()
+        # slicer.mrmlScene.AddNode(outputVolume)
+        # outputVolume.CreateDefaultDisplayNodes()
+        # outputVolume.SetAttribute("DistanceMap", "True");
+        # volumeNode = slicer.util.getNode('LiverVolume000')
 
-    # self.delayDisplay("Computing distance map")
+        # segmentationNode = slicer.util.getNode('LiverSegmentation000')
+        # segmentationNode.SetReferenceImageGeometryParameterFromVolumeNode(volumeNode)
+        # segmentationNode.CreateBinaryLabelmapRepresentation()
+        # segments = vtk.vtkStringArray()
+        # segments.InsertNextValue("Tumor1")
+        # segLogic = slicer.vtkSlicerSegmentationsModuleLogic
+        # segLogic.ExportSegmentsToLabelmapNode(segmentationNode, segments, labelNode, volumeNode,
+        #                                       segCore.vtkSegmentation.EXTENT_UNION_OF_EFFECTIVE_SEGMENTS_AND_REFERENCE_GEOMETRY)
 
-    # tumorLabelMapSelector.setCurrentNode(labelNode)
-    # outputDistanceMapSelector.setCurrentNode(outputVolume)
-    # computeDistanceMapPushButton.click()
+        # self.delayDisplay("Computing distance map")
 
-    # self.delayDisplay("Testing difference with groundtruth image")
+        # tumorLabelMapSelector.setCurrentNode(labelNode)
+        # outputDistanceMapSelector.setCurrentNode(outputVolume)
+        # computeDistanceMapPushButton.click()
 
-    # import sitkUtils
-    # import SimpleITK as sitk
-    # groundTruthVolume = slicer.util.getNode('DistanceMap000')
-    # groundTruthImage = sitkUtils.PullVolumeFromSlicer(groundTruthVolume)
-    # distanceMapImage = sitkUtils.PullVolumeFromSlicer(outputVolume)
-    # differenceImage = sitk.Subtract(groundTruthImage, distanceMapImage)
-    # statisticsFilter = sitk.StatisticsImageFilter()
-    # statisticsFilter.Execute(differenceImage)
+        # self.delayDisplay("Testing difference with groundtruth image")
 
-    # self.assertEqual(statisticsFilter.GetMaximum(), 0)
-    # self.assertEqual(statisticsFilter.GetMaximum(), 0)
-    # self.assertEqual(statisticsFilter.GetMean(), 0)
+        # import sitkUtils
+        # import SimpleITK as sitk
+        # groundTruthVolume = slicer.util.getNode('DistanceMap000')
+        # groundTruthImage = sitkUtils.PullVolumeFromSlicer(groundTruthVolume)
+        # distanceMapImage = sitkUtils.PullVolumeFromSlicer(outputVolume)
+        # differenceImage = sitk.Subtract(groundTruthImage, distanceMapImage)
+        # statisticsFilter = sitk.StatisticsImageFilter()
+        # statisticsFilter.Execute(differenceImage)
 
-    self.delayDisplay("Test passed!")
+        # self.assertEqual(statisticsFilter.GetMaximum(), 0)
+        # self.assertEqual(statisticsFilter.GetMaximum(), 0)
+        # self.assertEqual(statisticsFilter.GetMean(), 0)
 
-  def setUp(self):
+        self.delayDisplay("Test passed!")
 
-    slicer.mrmlScene.Clear()
+    def setUp(self):
+        slicer.mrmlScene.Clear()
 
-    # Get/create input data
-    import SampleData
-    registerSampleData()
-    inputSegmentation = SampleData.downloadSample('LiverSegmentation000')
-    inputVolume= SampleData.downloadSample('LiverVolume000')
-    self.delayDisplay('Loaded test data set')
+        # Get/create input data
+        import SampleData
+        registerSampleData()
+        inputSegmentation = SampleData.downloadSample('LiverSegmentation000')
+        inputVolume = SampleData.downloadSample('LiverVolume000')
+        self.delayDisplay('Loaded test data set')

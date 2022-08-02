@@ -48,7 +48,7 @@ vtkMRMLNodeNewMacro(vtkMRMLMarkupsBezierSurfaceDisplayNode);
 
 //----------------------------------------------------------------------------
 vtkMRMLMarkupsBezierSurfaceDisplayNode::vtkMRMLMarkupsBezierSurfaceDisplayNode()
-  :ClipOut(false), WidgetVisibility(true),
+  :ClipOut(false),ShowResection2D(false), WidgetVisibility(true),
    ResectionMarginColor{0.0f, 0.0f, 0.0f}, UncertaintyMarginColor{0.0f, 0.0f, 0.0f},
    ResectionOpacity(1.0f), GridDivisions(0.0f), GridThickness(0.0f)
 {

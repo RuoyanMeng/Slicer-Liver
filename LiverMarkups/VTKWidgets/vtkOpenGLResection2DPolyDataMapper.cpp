@@ -35,7 +35,7 @@ public:
               ResectionColor{1.0f,1.0f, 1.0f},
               ResectionGridColor{0.0f,0.0f, 0.0f},
               ResectionOpacity(1.0f),
-              InterpolatedMargins(false), ResectionClipOut(false)
+              InterpolatedMargins(false), ResectionClipOut(false), ShowResection2D(false)
     {
         this->RasToIjkMatrixT = vtkSmartPointer<vtkMatrix4x4>::New();
         this->IjkToTextureMatrixT = vtkSmartPointer<vtkMatrix4x4>::New();
@@ -56,6 +56,7 @@ public:
     bool  ResectionClipOut;
     unsigned int GridDivisions;
     float GridThicknessFactor;
+    bool ShowResection2D;
 };
 
 //------------------------------------------------------------------------------
@@ -629,3 +630,4 @@ void vtkOpenGLResection2DPolyDataMapper::SetGridThicknessFactor(float thickness)
     this->Impl->GridThicknessFactor = thickness;
     this->Modified();
 }
+
