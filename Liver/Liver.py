@@ -127,6 +127,7 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         self.logic = None
         self._uiLoader = loader = qt.QUiLoader()
         self._currentResectionNode = None
+        self.numComps = 0
 
     def setup(self):
         """
@@ -174,6 +175,10 @@ class LiverWidget(ScriptedLoadableModuleWidget):
                                                                        self.onDistanceMapParameterChanged)
         self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap',
                                                                             'True')
+        self.distanceMapsWidget.HepaticLabelMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
+                                                                    self.onDistanceMapParameterChanged)
+        self.distanceMapsWidget.PortalLabelMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
+                                                                   self.onDistanceMapParameterChanged)
         self.distanceMapsWidget.OutputDistanceMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
                                                                       self.onDistanceMapParameterChanged)
         self.distanceMapsWidget.OutputDistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap',
@@ -210,6 +215,13 @@ class LiverWidget(ScriptedLoadableModuleWidget):
                                                                   self.onInterpolatedMarginsChanged)
 
         self.resectionsWidget.Resection2DCheckBox.connect('stateChanged(int)', self.onResection2DChanged)
+        self.resectionsWidget.HepaticContourSizeSpinBox.connect('valueChanged(double)',
+                                                                self.onHepaticContourSizeChanged)
+        self.resectionsWidget.HepaticContourColorPickerButton.connect('colorChanged(QColor)',
+                                                                      self.onHepaticContourColorChanged)
+        self.resectionsWidget.PortalContourSizeSpinBox.connect('valueChanged(double)', self.onPortalContourSizeChanged)
+        self.resectionsWidget.PortalContourColorPickerButton.connect('colorChanged(QColor)',
+                                                                     self.onPortalContourColorChanged)
 
     def onDistanceMapParameterChanged(self):
         """
@@ -217,12 +229,16 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         """
         node1 = self.distanceMapsWidget.TumorLabelMapComboBox.currentNode()
         node2 = self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.currentNode()
-        node3 = self.distanceMapsWidget.OutputDistanceMapNodeComboBox.currentNode()
-        self.distanceMapsWidget.ComputeDistanceMapsPushButton.setEnabled(None not in [node1, node2, node3])
+        node3 = self.distanceMapsWidget.HepaticLabelMapNodeComboBox.currentNode()
+        node4 = self.distanceMapsWidget.PortalLabelMapNodeComboBox.currentNode()
+        node5 = self.distanceMapsWidget.OutputDistanceMapNodeComboBox.currentNode()
+        self.numComps = 4 - [node1, node2, node3, node4, node5].count(None)
+        self.distanceMapsWidget.ComputeDistanceMapsPushButton.setEnabled(None not in [node1, node2, node5])
+        # self.distanceMapsWidget.ComputeDistanceMapsPushButton.setEnabled(None not in [node1, node2, node3, node4, node5])
 
     def onResectionNodeChanged(self):
         """
-        This function is triggered when the resectio node combo box changes. It
+        This function is triggered when the resection node combo box changes. It
         adjust the rest of the UI according to the parameters contained in the node.
         """
         activeResectionNode = self.resectionsWidget.ResectionNodeComboBox.currentNode()
@@ -287,13 +303,6 @@ class LiverWidget(ScriptedLoadableModuleWidget):
                     qt.QColor.fromRgbF(color[0], color[1], color[2]))
                 self.resectionsWidget.UncertaintyMarginColorPickerButton.blockSignals(False)
 
-                self.resectionsWidget.Resection2DCheckBox.blockSignals(True)
-                if (activeResectionNode.GetWidgetVisibility()):
-                    self.resectionsWidget.Resection2DCheckBox.setCheckState(0)
-                else:
-                    self.resectionsWidget.Resection2DCheckBox.setCheckState(2)
-                self.resectionsWidget.Resection2DCheckBox.blockSignals(False)
-
                 self.resectionsWidget.ResectionLockCheckBox.blockSignals(True)
                 if activeResectionNode.GetWidgetVisibility():
                     self.resectionsWidget.ResectionLockCheckBox.setCheckState(0)  # Unchecked
@@ -307,6 +316,18 @@ class LiverWidget(ScriptedLoadableModuleWidget):
                 else:
                     self.resectionsWidget.InterpolatedMarginsCheckBox.setCheckState(0)  # Unchecked
                 self.resectionsWidget.InterpolatedMarginsCheckBox.blockSignals(False)
+
+                self.resectionsWidget.PortalContourColorPickerButton.blockSignals(True)
+                color = activeResectionNode.GetPortalContourColor()
+                self.resectionsWidget.PortalContourColorPickerButton.setColor(
+                    qt.QColor.fromRgbF(color[0], color[1], color[2]))
+                self.resectionsWidget.PortalContourColorPickerButton.blockSignals(False)
+
+                self.resectionsWidget.HepaticContourColorPickerButton.blockSignals(True)
+                color = activeResectionNode.GetHepaticContourColor()
+                self.resectionsWidget.HepaticContourColorPickerButton.setColor(
+                    qt.QColor.fromRgbF(color[0], color[1], color[2]))
+                self.resectionsWidget.HepaticContourColorPickerButton.blockSignals(False)
 
                 if activeResectionNode.GetState() == activeResectionNode.Initialization:  # Show initialization
                     lvLogic.HideBezierSurfaceMarkupFromResection(self._currentResectionNode)
@@ -333,12 +354,13 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         """
         if self._currentResectionNode is not None:
             distanceMapNode = self.resectionsWidget.DistanceMapNodeComboBox.currentNode()
+            self._currentResectionNode.SetTextureNumComps(self.numComps)
             self._currentResectionNode.SetDistanceMapVolumeNode(
                 self.resectionsWidget.DistanceMapNodeComboBox.currentNode())
             self.resectionsWidget.ResectionMarginGroupBox.setEnabled(distanceMapNode is not None)
             self.resectionsWidget.UncertaintyMarginGroupBox.setEnabled(distanceMapNode is not None)
             self.resectionsWidget.ResectionPreviewGroupBox.setEnabled(distanceMapNode is not None)
-            self.resectionsWidget.Resection2DGroupBox.setEnabled(distanceMapNode is not None)
+            self.resectionsWidget.Resection2DCheckBox.setEnabled(distanceMapNode is not None)
 
     def onResectionLiverModelNodeChanged(self):
         """
@@ -367,6 +389,20 @@ class LiverWidget(ScriptedLoadableModuleWidget):
             self.resectionsWidget.ResectionMarginSpinBox.minimum = self._currentResectionNode.GetUncertaintyMargin()
             self.updateTotalMargin()
 
+    def onHepaticContourSizeChanged(self):
+        """
+        This function is called when the resection margin spinbox changes.
+        """
+        if self._currentResectionNode is not None:
+            self._currentResectionNode.SetHepaticContourSize(self.resectionsWidget.HepaticContourSizeSpinBox.value)
+
+    def onPortalContourSizeChanged(self):
+        """
+        This function is called when the resection margin spinbox changes.
+        """
+        if self._currentResectionNode is not None:
+            self._currentResectionNode.SetPortalContourSize(self.resectionsWidget.PortalContourSizeSpinBox.value)
+
     def updateTotalMargin(self):
         uncertainty = self._currentResectionNode.GetUncertaintyMargin()
         resection = self._currentResectionNode.GetResectionMargin()
@@ -386,8 +422,12 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         """
         if self._currentResectionNode is not None:
             self._currentResectionNode.SetShowResection2D(self.resectionsWidget.Resection2DCheckBox.isChecked())
+            self.resectionsWidget.HepaticContourGroupBox.setEnabled(
+                self.resectionsWidget.Resection2DCheckBox.isChecked())
+            self.resectionsWidget.PortalContourGroupBox.setEnabled(
+                self.resectionsWidget.Resection2DCheckBox.isChecked())
             renderers = slicer.app.layoutManager().threeDWidget(0).threeDView().renderWindow().GetRenderers()
-            if self.resectionsWidget.Resection2DCheckBox.isChecked()==0 and renderers.GetNumberOfItems()==5:
+            if self.resectionsWidget.Resection2DCheckBox.isChecked() == 0 and renderers.GetNumberOfItems() == 5:
                 renderers.RemoveItem(4)
 
     def onComputeDistanceMapButtonClicked(self):
@@ -396,11 +436,14 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         """
         tumorLabelMapNode = self.distanceMapsWidget.TumorLabelMapComboBox.currentNode()
         parenchymaLabelMapNode = self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.currentNode()
+        hepaticLabelMapNode = self.distanceMapsWidget.HepaticLabelMapNodeComboBox.currentNode()
+        portalLabelMapNode = self.distanceMapsWidget.PortalLabelMapNodeComboBox.currentNode()
         outputVolumeNode = self.distanceMapsWidget.OutputDistanceMapNodeComboBox.currentNode()
 
         slicer.app.pauseRender()
         qt.QApplication.setOverrideCursor(qt.Qt.WaitCursor)
-        self.logic.computeDistanceMaps(tumorLabelMapNode, parenchymaLabelMapNode, outputVolumeNode)
+        self.logic.computeDistanceMaps(tumorLabelMapNode, parenchymaLabelMapNode, hepaticLabelMapNode,
+                                       portalLabelMapNode, outputVolumeNode)
         slicer.app.resumeRender()
         qt.QApplication.restoreOverrideCursor()
         slicer.util.showStatusMessage('')
@@ -474,6 +517,24 @@ class LiverWidget(ScriptedLoadableModuleWidget):
             rgbF = [color.redF(), color.greenF(), color.blueF()]
             self._currentResectionNode.SetUncertaintyMarginColor(rgbF)
 
+    def onHepaticContourColorChanged(self):
+        """
+        This function is called whenever the resection margin color has changed
+        """
+        if self._currentResectionNode is not None:
+            color = self.resectionsWidget.HepaticContourColorPickerButton.color
+            rgbF = [color.redF(), color.greenF(), color.blueF()]
+            self._currentResectionNode.SetHepaticContourColor(rgbF)
+
+    def onPortalContourColorChanged(self):
+        """
+        This function is called whenever the resection margin color has changed
+        """
+        if self._currentResectionNode is not None:
+            color = self.resectionsWidget.PortalContourColorPickerButton.color
+            rgbF = [color.redF(), color.greenF(), color.blueF()]
+            self._currentResectionNode.SetPortalContourColor(rgbF)
+
     def onGridDivisionsChanged(self):
         """
         This function is called whenever the resection grid divisions has changed
@@ -527,27 +588,91 @@ class LiverLogic(ScriptedLoadableModuleLogic):
         """
         ScriptedLoadableModuleLogic.__init__(self)
 
-    def computeDistanceMaps(self, tumorNode, parenchymaNode, outputNode):
+    def computeDistanceMaps(self, tumorNode, parenchymaNode, hepaticNode, portalNode, outputNode):
         if outputNode is not None:
             import sitkUtils
             import SimpleITK as sitk
 
-            # Compute tumor distance map
-            tumorImage = sitkUtils.PullVolumeFromSlicer(tumorNode)
-            tumorDistanceImage = sitk.SignedMaurerDistanceMap(tumorImage, False, False, True)
-            logging.debug("Computing Tumor Distance Map...")
+            tumorDistanceImage = None
+            parenchymaDistanceImage = None
+            hepaticDistanceImage = None
+            portalDistanceImage = None
 
             # Compute tumor distance map
-            parenchymaImage = sitkUtils.PullVolumeFromSlicer(parenchymaNode)
-            parenchymaDistanceImage = sitk.SignedMaurerDistanceMap(parenchymaImage, False, False, True)
-            logging.debug("Computing Parenchyma Distance Map...")
+            if tumorNode != None:
+                tumorImage = sitkUtils.PullVolumeFromSlicer(tumorNode)
+                tumorDistanceImage = sitk.SignedMaurerDistanceMap(tumorImage, False, False, True)
+                logging.debug("Computing Tumor Distance Map...")
+                # tumorDistanceImageDown =  self.imageResample( tumorDistanceImage, [150,150,150], "linear")
+
+            # Compute tumor distance map
+            if parenchymaNode != None:
+                parenchymaImage = sitkUtils.PullVolumeFromSlicer(parenchymaNode)
+                parenchymaDistanceImage = sitk.SignedMaurerDistanceMap(parenchymaImage, False, False, True)
+                logging.debug("Computing Parenchyma Distance Map...")
+                # parenchymaDistanceImageDown = self.imageResample( parenchymaDistanceImage, [150,150,150], "linear")
+
+            # Compute tumor distance map
+            if hepaticNode != None:
+                hepaticImage = sitkUtils.PullVolumeFromSlicer(hepaticNode)
+                hepaticDistanceImage = sitk.SignedMaurerDistanceMap(hepaticImage, False, False, True)
+                logging.debug("Computing Hepatic Distance Map...")
+
+            # Compute tumor distance map
+            if portalNode != None:
+                portalImage = sitkUtils.PullVolumeFromSlicer(portalNode)
+                portalDistanceImage = sitk.SignedMaurerDistanceMap(portalImage, False, False, True)
+                logging.debug("Computing Portal Distance Map...")
 
             # Combine distance maps
-            compositeDistanceMap = sitk.Compose(tumorDistanceImage, parenchymaDistanceImage)
+            compositeDistanceMap = sitk.Compose(*[i for i in [tumorDistanceImage, parenchymaDistanceImage, hepaticDistanceImage, portalDistanceImage] if i])
             sitkUtils.PushVolumeToSlicer(compositeDistanceMap, targetNode=outputNode,
                                          className='vtkMRMLVectorVolumeNode')
             outputNode.SetAttribute('DistanceMap', "True");
             outputNode.SetAttribute('Computed', "True");
+
+    def imageResample(self, inputImage, resampledSize, interpolatorType):
+        """
+        Resampling the Maurer distance map
+        """
+        if inputImage is not None:
+            import SimpleITK as sitk
+
+        outputOrigin = inputImage.GetOrigin()
+        outputDirection = inputImage.GetDirection()
+        inputSizePixels = inputImage.GetSize()
+        inputSpacing = inputImage.GetSpacing()
+        inputSize = [inputSpacing[0] * inputSizePixels[0],
+                 inputSpacing[1] * inputSizePixels[1],
+                 inputSpacing[2] * inputSizePixels[2]]
+
+        outputSpacing = [0.0, 0.0, 0.0]
+        outputSpacing[0] = inputSize[0] / float(resampledSize[0])
+        outputSpacing[1] = inputSize[1] / float(resampledSize[1])
+        outputSpacing[2] = inputSize[2] / float(resampledSize[2])
+
+        NewOutputOrigin = [0.0, 0.0, 0.0]
+        NewOutputOrigin[0] = outputOrigin[0] + (outputSpacing[0] / 2.0 - inputSpacing[0] / 2.0) * outputDirection[0];
+        NewOutputOrigin[1] = outputOrigin[1] + (outputSpacing[1] / 2.0 - inputSpacing[1] / 2.0) * outputDirection[4];
+        NewOutputOrigin[2] = outputOrigin[2] + (outputSpacing[2] / 2.0 - inputSpacing[2] / 2.0) * outputDirection[8];
+
+        if interpolatorType == "linear":
+            interpolator = sitk.sitkLinear
+        elif interpolatorType == "b-spline":
+            interpolator = sitk.sitkBSpline
+        elif interpolatorType == "nearest neighbor":
+            interpolator = sitk.sitkNearestNeighbor
+
+        imageResampleFilter = sitk.ResampleImageFilter()
+        imageResampleFilter.SetInterpolator(interpolator)
+        imageResampleFilter.SetOutputOrigin(NewOutputOrigin)
+        imageResampleFilter.SetOutputSpacing(outputSpacing)
+        imageResampleFilter.SetOutputDirection(outputDirection)
+        imageResampleFilter.SetSize(resampledSize)
+
+        resampledImage = imageResampleFilter.Execute(inputImage)
+
+        return resampledImage
 
 
 #

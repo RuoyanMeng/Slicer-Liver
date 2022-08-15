@@ -251,6 +251,35 @@ public:
   // Set the widget visibility variable
   vtkSetMacro(GridThickness, float);
 
+    // Get HepaticContourSize margin
+    vtkGetMacro(HepaticContourSize, double);
+
+    // Set HepaticContourSize margin
+    vtkSetClampMacro(HepaticContourSize, double, 0.0, VTK_DOUBLE_MAX);
+
+    // Get HepaticContourSize margin
+    vtkGetMacro(PortalContourSize, double);
+    // Set HepaticContourSize margin
+    vtkSetClampMacro(PortalContourSize, double, 0.0, VTK_DOUBLE_MAX);
+
+    // Set HepaticContourColor
+    vtkSetVector3Macro(HepaticContourColor, float);
+
+    // Get HepaticContourColor
+    vtkGetVector3Macro(HepaticContourColor, float);
+
+    // Set PortalContourColor
+    vtkSetVector3Macro(PortalContourColor, float);
+
+    // Get PortalContourColor
+    vtkGetVector3Macro(PortalContourColor, float);
+
+    // Get the clipout state variable
+    vtkGetMacro(TextureNumComps, int);
+
+    // Set the clipout state variable
+    vtkSetMacro(TextureNumComps, int);
+
 protected:
   vtkMRMLLiverResectionNode();
   ~vtkMRMLLiverResectionNode() override;
@@ -280,7 +309,11 @@ private:
   float GridDivisions;
   float GridThickness;
   bool ShowResection2D;
-
+    double HepaticContourSize; //Resection margin in mm
+    double PortalContourSize; //Uncertainty margin in mm
+    float HepaticContourColor[3];
+    float PortalContourColor[3];
+    int TextureNumComps;
 private:
  vtkMRMLLiverResectionNode(const vtkMRMLLiverResectionNode&);
  void operator=(const vtkMRMLLiverResectionNode&);

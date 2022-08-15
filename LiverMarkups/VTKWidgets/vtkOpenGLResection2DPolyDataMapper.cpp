@@ -35,7 +35,11 @@ public:
               ResectionColor{1.0f,1.0f, 1.0f},
               ResectionGridColor{0.0f,0.0f, 0.0f},
               ResectionOpacity(1.0f),
-              InterpolatedMargins(false), ResectionClipOut(false), ShowResection2D(false)
+              InterpolatedMargins(false), ResectionClipOut(false), ShowResection2D(false),
+              PortalContourSize(0.0f), HepaticContourSize(0.0f),
+              PortalContourColor{0.0f, 1.0f, 0.0f},
+              HepaticContourColor{0.0f, 1.0f, 0.0f},
+              TextureNumComps(0)
     {
         this->RasToIjkMatrixT = vtkSmartPointer<vtkMatrix4x4>::New();
         this->IjkToTextureMatrixT = vtkSmartPointer<vtkMatrix4x4>::New();
@@ -57,6 +61,11 @@ public:
     unsigned int GridDivisions;
     float GridThicknessFactor;
     bool ShowResection2D;
+    float PortalContourSize;
+    float HepaticContourSize;
+    float PortalContourColor[3];
+    float HepaticContourColor[3];
+    int TextureNumComps;
 };
 
 //------------------------------------------------------------------------------
@@ -157,7 +166,10 @@ void vtkOpenGLResection2DPolyDataMapper::ReplaceShaderValues(
             "uniform float uGridThickness;\n"
             "in vec2 uvCoordsOutput;\n"
             "in vec4 vertexWCVSOutputBS;\n"
-            "vec4 fragPositionMCBS = vertexWCVSOutputBS;\n");
+            "vec4 fragPositionMCBS = vertexWCVSOutputBS;\n"
+            "uniform vec3 uPortalContourColor;\n"
+            "uniform vec3 uHepaticContourColor;\n"
+            "uniform int uTextureNumComps;\n");
 
     vtkShaderProgram::Substitute(
             FSSource, "//VTK::Color::Impl",
@@ -187,41 +199,26 @@ void vtkOpenGLResection2DPolyDataMapper::ReplaceShaderValues(
             "     diffuseColor = vec3(0.0);\n"
             "    }\n"
             "  }\n"
-            //            "  else if(dist[0] < highMargin){\n"
-            //            "   ambientColor = vec3(0.0);\n"
-            //            "   diffuseColor = vec3(0.0);\n"
-            //            "  }\n"
-            //            "  else{\n"
-            //            "    ambientColor = uResectionColor;\n"
-            //            "    diffuseColor = vec3(0.6);\n"
-            //            "  }\n"
+
             "if(tan(uvCoordsOutput.x*M_PI*uGridDivisions)>10.0-uGridThickness || tan(uvCoordsOutput.y*M_PI*uGridDivisions)>10.0-uGridThickness){\n"
             "   ambientColor = uResectionGridColor;\n"
             "   diffuseColor = vec3(0.0);\n"
             "}\n"
             "else{\n"
-            //            "  if( dist[1] > 5 ){\n"
-            //            "    ambientColor = uResectionColor;\n"
-            //            "    diffuseColor = vec3(0.6);\n"
-            //            "  }\n"
-            //            "  else{\n"
+            "  if(uTextureNumComps > 2){\n"
             "    if( abs(dist[1])<0.5 ){\n"
             "      ambientColor = vec3(0.0,0.0,0.0);\n"
             "      diffuseColor = vec3(0.0);\n"
             "    }\n"
-//            "    else if( abs(dist[2])<0.5 && dist[1] < 5){\n"
-//            "      ambientColor = vec3(0, 151/225.0, 206/225.0);\n"
-//            "      diffuseColor = vec3(0.0);\n"
-//            "    }\n"
-//            "    else if( abs(dist[3])<0.5 && dist[1] < 5){\n"
-//            "      ambientColor = vec3(221.0/225, 130.0/225, 101.0/225);\n"
-//            "      diffuseColor = vec3(0.0);\n"
-//            "    }\n"
-            //            "    else{\n"
-            //            "      ambientColor = uResectionColor;\n"
-            //            "      diffuseColor = vec3(0.6);\n"
-            //            "    }\n"
-            //            "  }\n"
+            "    else if( abs(dist[2])<0.5 && dist[1] < 5){\n"
+            "      ambientColor = uHepaticContourColor;\n"
+            "      diffuseColor = vec3(0.0);\n"
+            "    }\n"
+            "    else if( abs(dist[3])<0.5 && dist[1] < 5){\n"
+            "      ambientColor = uPortalContourColor;\n"
+            "      diffuseColor = vec3(0.0);\n"
+            "    }\n"
+            "  }\n"
             "}\n");
     vtkShaderProgram::Substitute(
             FSSource, "//VTK::Light::Impl",
@@ -353,6 +350,21 @@ void vtkOpenGLResection2DPolyDataMapper::SetMapperShaderParameters(
     if (cellBO.Program->IsUniformUsed("uGridThickness"))
     {
         cellBO.Program->SetUniformf("uGridThickness", this->Impl->GridThicknessFactor);
+    }
+
+    if (cellBO.Program->IsUniformUsed("uHepaticContourColor"))
+    {
+        cellBO.Program->SetUniform3f("uHepaticContourColor", this->Impl->HepaticContourColor);
+    }
+
+    if (cellBO.Program->IsUniformUsed("uPortalContourColor"))
+    {
+        cellBO.Program->SetUniform3f("uPortalContourColor", this->Impl->PortalContourColor);
+    }
+
+    if (cellBO.Program->IsUniformUsed("uTextureNumComps"))
+    {
+        cellBO.Program->SetUniformi("uTextureNumComps", this->Impl->TextureNumComps);
     }
 
     Superclass::SetMapperShaderParameters(cellBO, ren, actor);
@@ -631,3 +643,89 @@ void vtkOpenGLResection2DPolyDataMapper::SetGridThicknessFactor(float thickness)
     this->Modified();
 }
 
+//------------------------------------------------------------------------------
+float const* vtkOpenGLResection2DPolyDataMapper::GetHepaticContourColor() const
+{
+    return this->Impl->HepaticContourColor;
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLResection2DPolyDataMapper::SetHepaticContourColor(float color[3])
+{
+    this->Impl->HepaticContourColor[0] = color[0];
+    this->Impl->HepaticContourColor[1] = color[1];
+    this->Impl->HepaticContourColor[2] = color[2];
+    this->Modified();
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLResection2DPolyDataMapper::SetHepaticContourColor(float red, float green, float blue)
+{
+    this->Impl->HepaticContourColor[0] = red;
+    this->Impl->HepaticContourColor[1] = green;
+    this->Impl->HepaticContourColor[2] = blue;
+    this->Modified();
+}
+
+//------------------------------------------------------------------------------
+float const* vtkOpenGLResection2DPolyDataMapper::GetPortalContourColor() const
+{
+    return this->Impl->PortalContourColor;
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLResection2DPolyDataMapper::SetPortalContourColor(float color[3])
+{
+    this->Impl->PortalContourColor[0] = color[0];
+    this->Impl->PortalContourColor[1] = color[1];
+    this->Impl->PortalContourColor[2] = color[2];
+    this->Modified();
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLResection2DPolyDataMapper::SetPortalContourColor(float red, float green, float blue)
+{
+    this->Impl->PortalContourColor[0] = red;
+    this->Impl->PortalContourColor[1] = green;
+    this->Impl->PortalContourColor[2] = blue;
+    this->Modified();
+}
+
+//------------------------------------------------------------------------------
+float vtkOpenGLResection2DPolyDataMapper::GetHepaticContourSize() const
+{
+    return this->Impl->HepaticContourSize;
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLResection2DPolyDataMapper::SetHepaticContourSize(float margin)
+{
+    this->Impl->HepaticContourSize = margin;
+    this->Modified();
+}
+
+//------------------------------------------------------------------------------
+float vtkOpenGLResection2DPolyDataMapper::GetPortalContourSize() const
+{
+    return this->Impl->PortalContourSize;
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLResection2DPolyDataMapper::SetPortalContourSize(float margin)
+{
+    this->Impl->PortalContourSize = margin;
+    this->Modified();
+}
+
+//------------------------------------------------------------------------------
+int vtkOpenGLResection2DPolyDataMapper::GetTextureNumComps() const
+{
+    return this->Impl->TextureNumComps;
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLResection2DPolyDataMapper::SetTextureNumComps(int numComps)
+{
+    this->Impl->TextureNumComps = numComps;
+    this->Modified();
+}

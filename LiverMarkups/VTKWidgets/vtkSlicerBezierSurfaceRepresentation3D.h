@@ -109,7 +109,7 @@ vtkTypeMacro(vtkSlicerBezierSurfaceRepresentation3D, vtkSlicerMarkupsWidgetRepre
 
 protected:
     /// TransferDistanceMap
-    void CreateAndTransferDistanceMapTexture(vtkMRMLScalarVolumeNode *node);
+    void CreateAndTransferDistanceMapTexture(vtkMRMLScalarVolumeNode *node, int numComps);
 
 protected:
     //k Bezier surface releated elements
