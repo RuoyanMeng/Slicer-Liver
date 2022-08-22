@@ -329,6 +329,14 @@ class LiverWidget(ScriptedLoadableModuleWidget):
                     qt.QColor.fromRgbF(color[0], color[1], color[2]))
                 self.resectionsWidget.HepaticContourColorPickerButton.blockSignals(False)
 
+                self.resectionsWidget.PortalContourSizeSpinBox.blockSignals(True)
+                self.resectionsWidget.PortalContourSizeSpinBox.setValue(activeResectionNode.GetPortalContourSize())
+                self.resectionsWidget.PortalContourSizeSpinBox.blockSignals(False)
+
+                self.resectionsWidget.HepaticContourSizeSpinBox.blockSignals(True)
+                self.resectionsWidget.HepaticContourSizeSpinBox.setValue(activeResectionNode.GetHepaticContourSize())
+                self.resectionsWidget.HepaticContourSizeSpinBox.blockSignals(False)
+
                 if activeResectionNode.GetState() == activeResectionNode.Initialization:  # Show initialization
                     lvLogic.HideBezierSurfaceMarkupFromResection(self._currentResectionNode)
                     lvLogic.HideInitializationMarkupFromResection(self._currentResectionNode)
@@ -422,10 +430,12 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         """
         if self._currentResectionNode is not None:
             self._currentResectionNode.SetShowResection2D(self.resectionsWidget.Resection2DCheckBox.isChecked())
-            self.resectionsWidget.HepaticContourGroupBox.setEnabled(
-                self.resectionsWidget.Resection2DCheckBox.isChecked())
-            self.resectionsWidget.PortalContourGroupBox.setEnabled(
-                self.resectionsWidget.Resection2DCheckBox.isChecked())
+            if self.distanceMapsWidget.HepaticLabelMapNodeComboBox.currentNode():
+                self.resectionsWidget.HepaticContourGroupBox.setEnabled(
+                    self.resectionsWidget.Resection2DCheckBox.isChecked())
+            if self.distanceMapsWidget.PortalLabelMapNodeComboBox.currentNode():
+                self.resectionsWidget.PortalContourGroupBox.setEnabled(
+                    self.resectionsWidget.Resection2DCheckBox.isChecked())
             renderers = slicer.app.layoutManager().threeDWidget(0).threeDView().renderWindow().GetRenderers()
             if self.resectionsWidget.Resection2DCheckBox.isChecked() == 0 and renderers.GetNumberOfItems() == 5:
                 renderers.RemoveItem(4)

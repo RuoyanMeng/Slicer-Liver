@@ -36,7 +36,7 @@ public:
               ResectionGridColor{0.0f,0.0f, 0.0f},
               ResectionOpacity(1.0f),
               InterpolatedMargins(false), ResectionClipOut(false), ShowResection2D(false),
-              PortalContourSize(0.0f), HepaticContourSize(0.0f),
+              PortalContourSize(0.3f), HepaticContourSize(0.3f),
               PortalContourColor{0.0f, 1.0f, 0.0f},
               HepaticContourColor{0.0f, 1.0f, 0.0f},
               TextureNumComps(0)
@@ -169,7 +169,9 @@ void vtkOpenGLResection2DPolyDataMapper::ReplaceShaderValues(
             "vec4 fragPositionMCBS = vertexWCVSOutputBS;\n"
             "uniform vec3 uPortalContourColor;\n"
             "uniform vec3 uHepaticContourColor;\n"
-            "uniform int uTextureNumComps;\n");
+            "uniform int uTextureNumComps;\n"
+            "uniform float uPortalContourSize;\n"
+            "uniform float uHepaticContourSize;\n");
 
     vtkShaderProgram::Substitute(
             FSSource, "//VTK::Color::Impl",
@@ -210,11 +212,11 @@ void vtkOpenGLResection2DPolyDataMapper::ReplaceShaderValues(
             "      ambientColor = vec3(0.0,0.0,0.0);\n"
             "      diffuseColor = vec3(0.0);\n"
             "    }\n"
-            "    else if( abs(dist[2])<0.5 && dist[1] < 5){\n"
+            "    else if( abs(dist[2])<uHepaticContourSize && dist[1] < 5){\n"
             "      ambientColor = uHepaticContourColor;\n"
             "      diffuseColor = vec3(0.0);\n"
             "    }\n"
-            "    else if( abs(dist[3])<0.5 && dist[1] < 5){\n"
+            "    else if( abs(dist[3])<uPortalContourSize && dist[1] < 5){\n"
             "      ambientColor = uPortalContourColor;\n"
             "      diffuseColor = vec3(0.0);\n"
             "    }\n"
@@ -365,6 +367,16 @@ void vtkOpenGLResection2DPolyDataMapper::SetMapperShaderParameters(
     if (cellBO.Program->IsUniformUsed("uTextureNumComps"))
     {
         cellBO.Program->SetUniformi("uTextureNumComps", this->Impl->TextureNumComps);
+    }
+
+    if (cellBO.Program->IsUniformUsed("uPortalContourSize"))
+    {
+        cellBO.Program->SetUniformf("uPortalContourSize", this->Impl->PortalContourSize);
+    }
+
+    if (cellBO.Program->IsUniformUsed("uHepaticContourSize"))
+    {
+        cellBO.Program->SetUniformf("uHepaticContourSize", this->Impl->HepaticContourSize);
     }
 
     Superclass::SetMapperShaderParameters(cellBO, ren, actor);
