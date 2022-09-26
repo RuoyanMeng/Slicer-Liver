@@ -45,35 +45,47 @@ from slicer.ScriptedLoadableModule import *
 import numpy as np
 import LiverSegments
 
-
 #
 # Liver
 #
 
 class Liver(ScriptedLoadableModule):
-    """Uses ScriptedLoadableModule base class, available at:
-    https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
-    """
+  """Uses ScriptedLoadableModule base class, available at:
+  https://github.com/Slicer/Slicer/blob/master/Base/Python/slicer/ScriptedLoadableModule.py
+  """
 
-    def __init__(self, parent):
-        ScriptedLoadableModule.__init__(self, parent)
-        self.parent.title = "Liver"
-        self.parent.categories = [""]
-        self.parent.dependencies = []
-        self.parent.contributors = ["Rafael Palomar (Oslo University Hospital / NTNU)"]
+  def __init__(self, parent):
+    ScriptedLoadableModule.__init__(self, parent)
 
-        self.parent.helpText = """
-    This module offers tools for computing liver resection plans in 3D liver models.
-    ""
-    This file was originally developed by Rafael Palomar (Oslo University
-    Hospital/NTNU), Ole Vegard Solberg (SINTEF) Geir Arne Tangen, SINTEF and
-    Javier Pérez de Frutos (SINTEF). This work was funded by The Research Council of
+    self.parent.title = "Liver"
+
+    self.parent.categories = ["IGT"]
+
+    self.parent.dependencies = ["LiverResections", "LiverMarkups", "LiverSegments"]
+
+    self.parent.contributors = ["Rafael Palomar (Oslo University Hospital / NTNU)",
+                                "Ole Vegard Solberg (SINTEF)",
+                                "Geir Arne Tangen (SINTEF)",
+                                "Egidijus Pelanis (Oslo University Hospital)",
+                                "Davit Aghayan (Oslo University Hospital)",
+                                "Gabriella D'Albenzio (Oslo University Hospital)",
+                                "Ruoyan Meng (NTNU)",
+                                "Javier Pérez-de-Frutos (SINTEF)",
+                                "Héctor Mártinez (Universidad de Córdoba)",
+                                "Francisco Javier Rodríguez Lozano (Universidad de Córdoba)",
+                                "Joaquín Olivares Bueno (Universidad de Córdoba)",
+                                "José Manuel Palomares Muñoz (Universidad de Córdoba)"]
+
+    self.parent.acknowledgementText = """
+    This work was funded by The Research Council of
     Norway through the project ALive (grant nr. 311393).
     """
+    self.parent.helpText = """
+    This module offers tools for liver perfusion analysis and resection planning.
+    """
 
-        # Additional initialization step after application startup is complete
-        slicer.app.connect("startupCompleted()", registerSampleData)
-
+    # Additional initialization step after application startup is complete
+    slicer.app.connect("startupCompleted()", registerSampleData)
 
 #
 # Register sample data sets in Sample Data module
@@ -110,7 +122,6 @@ def registerSampleData():
         nodeNames='LiverSegmentation000',
         loadFileType='SegmentationFile'
     )
-
 
 #
 # LiverWidget
@@ -150,6 +161,10 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         wrapperWidget = slicer.qMRMLWidget()
         wrapperWidget.setLayout(qt.QVBoxLayout())
         wrapperWidget.setMRMLScene(slicer.mrmlScene)
+        segemtsWidget = LiverSegments.LiverSegmentsWidget(wrapperWidget)
+        segemtsWidget.setup()
+        self.layout.addWidget(wrapperWidget)
+
 
         # Add a spacer at the botton to keep the UI flowing from top to bottom
         spacerItem = qt.QSpacerItem(0, 0, qt.QSizePolicy.Minimum, qt.QSizePolicy.MinimumExpanding)
@@ -168,52 +183,37 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         # Configure uncertainty margin combo box
         self.resectionsWidget.UncertaintyMarginComboBox.addItems(['Custom', 'Max. Spacing', 'RMS Spacing'])
 
-        # Connections
-        self.distanceMapsWidget.TumorLabelMapComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
-                                                              self.onDistanceMapParameterChanged)
-        self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
-                                                                       self.onDistanceMapParameterChanged)
-        self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap',
-                                                                            'True')
-        self.distanceMapsWidget.HepaticLabelMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
-                                                                    self.onDistanceMapParameterChanged)
-        self.distanceMapsWidget.PortalLabelMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
-                                                                   self.onDistanceMapParameterChanged)
-        self.distanceMapsWidget.OutputDistanceMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
-                                                                      self.onDistanceMapParameterChanged)
-        self.distanceMapsWidget.OutputDistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap',
-                                                                           'True')
-        self.distanceMapsWidget.ComputeDistanceMapsPushButton.connect('clicked(bool)',
-                                                                      self.onComputeDistanceMapButtonClicked)
-        self.resectionsWidget.ResectionNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
-                                                            self.onResectionNodeChanged)
-        self.resectionsWidget.DistanceMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
-                                                              self.onResectionDistanceMapNodeChanged)
+    # Connections
+        self.distanceMapsWidget.TumorSegmentSelectorWidget.connect('currentSegmentChanged(QString)', self.onDistanceMapParameterChanged)
+        self.distanceMapsWidget.ParenchymaSegmentSelectorWidget.connect('currentSegmentChanged(QString)', self.onDistanceMapParameterChanged)
+        self.distanceMapsWidget.SegmentationSelectorComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap', 'True')
+        self.distanceMapsWidget.OutputDistanceMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onDistanceMapParameterChanged)
+        self.distanceMapsWidget.OutputDistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap', 'True')
+        self.distanceMapsWidget.ComputeDistanceMapsPushButton.connect('clicked(bool)', self.onComputeDistanceMapButtonClicked)
+        self.resectionsWidget.ResectionNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onResectionNodeChanged)
+        self.resectionsWidget.DistanceMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onResectionDistanceMapNodeChanged)
         self.resectionsWidget.DistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap', 'True')
         self.resectionsWidget.DistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'Computed', 'True')
-        self.resectionsWidget.LiverModelNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
-                                                             self.onResectionLiverModelNodeChanged)
+        self.resectionsWidget.LiverSegmentSelectorWidget.connect('currentSegmentChanged(QString)', self.onResectionLiverModelNodeChanged)
+        self.resectionsWidget.LiverSegmentSelectorWidget.connect('currentNodeChanged(vtkMRMLNode*)', self.onResectionLiverSegmentationNodeChanged)
         self.resectionsWidget.ResectionColorPickerButton.connect('colorChanged(QColor)', self.onResectionColorChanged)
-        self.resectionsWidget.ResectionOpacityDoubleSlider.connect('valueChanged(double)',
-                                                                   self.onResectionOpacityChanged)
-        self.resectionsWidget.ResectionOpacityDoubleSpinBox.connect('valueChanged(double)',
-                                                                    self.onResectionOpacityChanged)
+        self.resectionsWidget.ResectionOpacityDoubleSlider.connect('valueChanged(double)', self.onResectionOpacityChanged)
+        self.resectionsWidget.ResectionOpacityDoubleSpinBox.connect('valueChanged(double)', self.onResectionOpacityChanged)
         self.resectionsWidget.ResectionMarginSpinBox.connect('valueChanged(double)', self.onResectionMarginChanged)
-        self.resectionsWidget.ResectionMarginColorPickerButton.connect('colorChanged(QColor)',
-                                                                       self.onResectionMarginColorChanged)
-        self.resectionsWidget.ResectionGridColorPickerButton.connect('colorChanged(QColor)',
-                                                                     self.onResectionGridColorChanged)
+        self.resectionsWidget.ResectionMarginColorPickerButton.connect('colorChanged(QColor)', self.onResectionMarginColorChanged)
+        self.resectionsWidget.ResectionGridColorPickerButton.connect('colorChanged(QColor)', self.onResectionGridColorChanged)
         self.resectionsWidget.GridDivisionsDoubleSlider.connect('valueChanged(double)', self.onGridDivisionsChanged)
         self.resectionsWidget.GridThicknessDoubleSlider.connect('valueChanged(double)', self.onGridThicknessChanged)
         self.resectionsWidget.ResectionLockCheckBox.connect('stateChanged(int)', self.onResectionLockChanged)
         self.resectionsWidget.UncertaintyMarginSpinBox.connect('valueChanged(double)', self.onUncertaintyMarginChanged)
-        self.resectionsWidget.UncertaintyMarginColorPickerButton.connect('colorChanged(QColor)',
-                                                                         self.onUncertaintyMarginColorChanged)
-        self.resectionsWidget.UncertaintyMarginComboBox.connect('currentIndexChanged(int)',
-                                                                self.onUncertaintyMaginComboBoxChanged)
-        self.resectionsWidget.InterpolatedMarginsCheckBox.connect('stateChanged(int)',
-                                                                  self.onInterpolatedMarginsChanged)
+        self.resectionsWidget.UncertaintyMarginColorPickerButton.connect('colorChanged(QColor)', self.onUncertaintyMarginColorChanged)
+        self.resectionsWidget.UncertaintyMarginComboBox.connect('currentIndexChanged(int)', self.onUncertaintyMaginComboBoxChanged)
+        self.resectionsWidget.InterpolatedMarginsCheckBox.connect('stateChanged(int)', self.onInterpolatedMarginsChanged)
 
+        self.distanceMapsWidget.HepaticLabelMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
+                                                                    self.onDistanceMapParameterChanged)
+        self.distanceMapsWidget.PortalLabelMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)',
+                                                                   self.onDistanceMapParameterChanged)
         self.resectionsWidget.Resection2DCheckBox.connect('stateChanged(int)', self.onResection2DChanged)
         self.resectionsWidget.HepaticContourSizeSpinBox.connect('valueChanged(double)',
                                                                 self.onHepaticContourSizeChanged)
@@ -227,8 +227,8 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         """
         This function is triggered whenever any parameter of the distance maps are changed
         """
-        node1 = self.distanceMapsWidget.TumorLabelMapComboBox.currentNode()
-        node2 = self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.currentNode()
+        node1 = self.distanceMapsWidget.TumorSegmentSelectorWidget.currentNode()
+        node2 = self.distanceMapsWidget.ParenchymaSegmentSelectorWidget.currentNode()
         node3 = self.distanceMapsWidget.HepaticLabelMapNodeComboBox.currentNode()
         node4 = self.distanceMapsWidget.PortalLabelMapNodeComboBox.currentNode()
         node5 = self.distanceMapsWidget.OutputDistanceMapNodeComboBox.currentNode()
@@ -252,10 +252,10 @@ class LiverWidget(ScriptedLoadableModuleWidget):
 
             if activeResectionNode is not None:
 
-                self.resectionsWidget.LiverModelNodeComboBox.blockSignals(True)
-                self.resectionsWidget.LiverModelNodeComboBox.setCurrentNode(
+                self.resectionsWidget.LiverSegmentSelectorWidget.blockSignals(True)
+                self.resectionsWidget.LiverSegmentSelectorWidget.setCurrentNode(
                     activeResectionNode.GetTargetOrganModelNode())
-                self.resectionsWidget.LiverModelNodeComboBox.blockSignals(False)
+                self.resectionsWidget.LiverSegmentSelectorWidget.blockSignals(False)
 
                 self.resectionsWidget.DistanceMapNodeComboBox.blockSignals(True)
                 self.resectionsWidget.DistanceMapNodeComboBox.setCurrentNode(
@@ -370,6 +370,36 @@ class LiverWidget(ScriptedLoadableModuleWidget):
             self.resectionsWidget.ResectionPreviewGroupBox.setEnabled(distanceMapNode is not None)
             self.resectionsWidget.Resection2DCheckBox.setEnabled(distanceMapNode is not None)
 
+    def onResectionLiverSegmentationNodeChanged(self):
+      self.resectionsWidget.LiverSegmentSelectorWidget.blockSignals(True)
+      self.resectionsWidget.LiverSegmentSelectorWidget.setCurrentSegmentID('')
+      self.resectionsWidget.LiverSegmentSelectorWidget.blockSignals(False)
+
+    def onResectionLiverModelNodeChanged(self):
+      """
+      This function is called when the resection liver model node changes
+      """
+      if self._currentResectionNode is not None:
+        parenchymaSegmentId = self.resectionsWidget.LiverSegmentSelectorWidget.currentSegmentID()
+        if parenchymaSegmentId == '':
+          return
+        segmentationNode = self.resectionsWidget.LiverSegmentSelectorWidget.currentNode()
+        modelPolyData = segmentationNode.GetClosedSurfaceInternalRepresentation(parenchymaSegmentId)
+        if modelPolyData is None:
+          segmentationNode.CreateClosedSurfaceRepresentation()
+          modelPolyData = segmentationNode.GetClosedSurfaceInternalRepresentation(parenchymaSegmentId)
+        modelPolyDataCopy = vtk.vtkPolyData()
+        modelPolyDataCopy.DeepCopy(modelPolyData)
+        modelNode = slicer.mrmlScene.AddNewNodeByClass('vtkMRMLModelNode')
+        modelNode.CreateDefaultDisplayNodes()
+        modelNode.SetHideFromEditors(True)
+        modelDisplayNode = modelNode.GetDisplayNode()
+        modelDisplayNode.SetOpacity(0.0)
+        modelNode.SetAndObservePolyData(modelPolyDataCopy)
+        self._currentResectionNode.SetTargetOrganModelNode(modelNode)
+        self.resectionsWidget.ResectionVisualizationGroupBox.setEnabled(modelNode is not None)
+        self.resectionsWidget.GridGroupBox.setEnabled(modelNode is not None)
+
     def onResectionLiverModelNodeChanged(self):
         """
         This function is called when the resection liver model node changes
@@ -441,22 +471,46 @@ class LiverWidget(ScriptedLoadableModuleWidget):
                 renderers.RemoveItem(4)
 
     def onComputeDistanceMapButtonClicked(self):
-        """
-        This function is called when the distance map calculation button is pressed
-        """
-        tumorLabelMapNode = self.distanceMapsWidget.TumorLabelMapComboBox.currentNode()
-        parenchymaLabelMapNode = self.distanceMapsWidget.ParenchymaLabelMapNodeComboBox.currentNode()
-        hepaticLabelMapNode = self.distanceMapsWidget.HepaticLabelMapNodeComboBox.currentNode()
-        portalLabelMapNode = self.distanceMapsWidget.PortalLabelMapNodeComboBox.currentNode()
-        outputVolumeNode = self.distanceMapsWidget.OutputDistanceMapNodeComboBox.currentNode()
+      """
+      This function is called when the distance map calculation button is pressed
+      """
+      qt.QApplication.setOverrideCursor(qt.Qt.WaitCursor)
+      segmentationNode = self.distanceMapsWidget.SegmentationSelectorComboBox.currentNode()
+      refVolumeNode = self.distanceMapsWidget.ReferenceVolumeSelector.currentNode()
+      tumorSegmentId = self.distanceMapsWidget.TumorSegmentSelectorWidget.currentSegmentID()
+      parenchymaSegmentId = self.distanceMapsWidget.ParenchymaSegmentSelectorWidget.currentSegmentID()
+      segmentationIds = vtk.vtkStringArray()
 
-        slicer.app.pauseRender()
-        qt.QApplication.setOverrideCursor(qt.Qt.WaitCursor)
-        self.logic.computeDistanceMaps(tumorLabelMapNode, parenchymaLabelMapNode, hepaticLabelMapNode,
-                                       portalLabelMapNode, outputVolumeNode)
-        slicer.app.resumeRender()
-        qt.QApplication.restoreOverrideCursor()
-        slicer.util.showStatusMessage('')
+      tumorLabelMapNode = self.distanceMapsWidget.TumorSegmentSelectorWidget.currentNode()
+      parenchymaLabelMapNode = self.distanceMapsWidget.ParenchymaSegmentSelectorWidget.currentNode()
+      hepaticLabelMapNode = self.distanceMapsWidget.HepaticLabelMapNodeComboBox.currentNode()
+      portalLabelMapNode = self.distanceMapsWidget.PortalLabelMapNodeComboBox.currentNode()
+
+      """
+      Export labelmaps volumes for the selected segmentations
+      """
+      tumorLabelmapVolumeNode = slicer.mrmlScene.GetFirstNodeByName("TumorLabelMap")
+      if not tumorLabelmapVolumeNode:
+        tumorLabelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLLabelMapVolumeNode", "TumorLabelMap")
+      parenchymaLabelmapVolumeNode = slicer.mrmlScene.GetFirstNodeByName("ParenchymaLabelMap")
+      if not parenchymaLabelmapVolumeNode:
+        parenchymaLabelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLLabelMapVolumeNode", "ParenchymaLabelMap")
+
+      segmentationIds.Initialize()
+      segmentationIds.InsertNextValue(tumorSegmentId)
+      slicer.modules.segmentations.logic().ExportSegmentsToLabelmapNode(segmentationNode, segmentationIds,
+        tumorLabelmapVolumeNode, refVolumeNode)
+      segmentationIds.Initialize()
+      segmentationIds.InsertNextValue(parenchymaSegmentId)
+      slicer.modules.segmentations.logic().ExportSegmentsToLabelmapNode(segmentationNode, segmentationIds,
+        parenchymaLabelmapVolumeNode, refVolumeNode)
+
+      outputVolumeNode = self.distanceMapsWidget.OutputDistanceMapNodeComboBox.currentNode()
+
+      self.logic.computeDistanceMaps(tumorLabelmapVolumeNode, parenchymaLabelmapVolumeNode, outputVolumeNode)
+      slicer.app.resumeRender()
+      qt.QApplication.restoreOverrideCursor()
+      slicer.util.showStatusMessage('')
 
     def onUncertaintyMaginComboBoxChanged(self):
         """
@@ -576,7 +630,6 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         Called each time the user opens a different module.
         """
         pass
-
 
 #
 # LiverLogic

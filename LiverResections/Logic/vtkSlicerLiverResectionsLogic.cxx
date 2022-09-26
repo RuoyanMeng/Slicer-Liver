@@ -41,6 +41,7 @@
 
 #include "vtkSlicerLiverResectionsLogic.h"
 #include "vtkMRMLAbstractLogic.h"
+#include "vtkMRMLLiverResectionCSVStorageNode.h"
 
 #include <vtkCommand.h>
 #include <vtkMRMLMarkupsSlicingContourNode.h>
@@ -98,6 +99,7 @@ void vtkSlicerLiverResectionsLogic::RegisterNodes()
 
   // Nodes
   scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLLiverResectionNode>::New());
+  scene->RegisterNodeClass(vtkSmartPointer<vtkMRMLLiverResectionCSVStorageNode>::New());
 }
 
 //---------------------------------------------------------------------------
@@ -159,6 +161,14 @@ void vtkSlicerLiverResectionsLogic::ProcessMRMLNodesEvents(vtkObject *caller,
       {
       this->CreateInitializationAndResectionMarkups(resectionNode);
       }
+
+    // Update the polydata
+    auto initializationNode =  vtkMRMLMarkupsSlicingContourNode::SafeDownCast(this->GetInitializationFromResection(resectionNode));
+    if(initializationNode)
+      {
+        initializationNode->SetTarget(resectionNode->GetTargetOrganModelNode());
+      }
+
     auto bezierSurfaceNode = this->GetBezierFromResection(resectionNode);
     if (bezierSurfaceNode)
       {
@@ -425,6 +435,8 @@ vtkSlicerLiverResectionsLogic::AddBezierSurface(vtkMRMLLiverResectionNode *resec
     markupsBezierSurfaceDisplayNode->SetSnapMode(vtkMRMLMarkupsDisplayNode::SnapModeUnconstrained);
     }
 
+  resectionNode->SetBezierSurfaceNode(markupsBezierSurfaceNode);
+
   return markupsBezierSurfaceNode;
 }
 
@@ -599,7 +611,7 @@ void vtkSlicerLiverResectionsLogic::HideBezierSurfaceMarkup(vtkMRMLMarkupsNode* 
     }
 
   auto bezierSurfaceDisplayNode = bezierSurfaceNode->GetDisplayNode();
-  if (bezierSurfaceDisplayNode)
+  if (!bezierSurfaceDisplayNode)
     {
     return;
     }
@@ -895,3 +907,120 @@ void vtkSlicerLiverResectionsLogic::CreateInitializationAndResectionMarkups(vtkM
   this->InitializationToBezierMap[initializationMarkupsNode] = markupsBezierNode;
   this->BezierToInitializationMap[markupsBezierNode] = initializationMarkupsNode;
 }
+
+//------------------------------------------------------------------------------
+char* vtkSlicerLiverResectionsLogic::LoadLiverResection(const std::string& fileName,
+                                                   const std::string& nodeName/*=nullptr*/,
+                                                   vtkMRMLMessageCollection* userMessages/*=nullptr*/)
+{
+  if (fileName == "")
+    {
+    vtkErrorMacro("vtkSlicerLiverResectionsLogic::LoadResections failed: invalid fileName");
+    return nullptr;
+    }
+
+  // get file extension
+  std::string extension = vtkMRMLStorageNode::GetLowercaseExtensionFromFileName(fileName);
+  if( extension.empty() )
+    {
+    vtkErrorMacro("vtkSlicerLiverResectionsLogic::LoadResections failed: no file extension specified: " << fileName);
+    return nullptr;
+    }
+
+  // if (extension == std::string(".json"))
+  //   {
+  //   return this->LoadLiverResectionsFromJson(fileName, nodeName, userMessages);
+  //   }
+  /*else */if (extension == std::string(".fcsv"))
+    {
+    return this->LoadLiverResectionFromFcsv(fileName, nodeName, userMessages);
+    }
+  else
+    {
+    vtkErrorMacro("vtkSlicerLiverResectionsLogic::LoadResections failed: unrecognized file extension in " << fileName);
+    return nullptr;
+    }
+}
+
+//---------------------------------------------------------------------------
+char *vtkSlicerLiverResectionsLogic::LoadLiverResectionFromFcsv(const std::string &fileName,
+                                                                 const std::string &nodeName /*=nullptr*/,
+                                                                 vtkMRMLMessageCollection *userMessages /*=nullptr*/)
+{
+
+  if (fileName == "") {
+    vtkErrorMacro(
+        "LoadLiverResections: null file or markups class name, cannot load");
+    return nullptr;
+  }
+
+  vtkDebugMacro("LoadLiverResections, file name = "
+                << fileName << ", nodeName = " << nodeName);
+  // make a storage node and fiducial node and set the file name
+  auto storageNode =
+      vtkMRMLStorageNode::SafeDownCast(this->GetMRMLScene()->AddNewNodeByClass(
+          "vtkMRMLLiverResectionCSVStorageNode"));
+  if (!storageNode) {
+    vtkErrorMacro("LoadLiverResections: failed to instantiate markups storage "
+                  "node by class vtkMRMLLiverResectionsFiducialNode");
+    return nullptr;
+  }
+
+  std::string newNodeName;
+  if (nodeName.length() > 0) {
+    newNodeName = nodeName;
+  } else {
+    newNodeName = this->GetMRMLScene()->GetUniqueNameByString(
+        storageNode->GetFileNameWithoutExtension(fileName.c_str()).c_str());
+  }
+  auto bezierNode = vtkMRMLMarkupsBezierSurfaceNode::SafeDownCast(
+      this->GetMRMLScene()->AddNewNodeByClass(
+          "vtkMRMLMarkupsBezierSurfaceNode"));
+  if (!bezierNode) {
+    vtkErrorMacro(
+        "LoadLiverResections: failed to instantiate markups bezier node by "
+        "class vtkMRMLLiverResectionFiducialNode");
+    if (userMessages) {
+      userMessages->AddMessages(storageNode->GetUserMessages());
+    }
+  }
+  bezierNode->SetHideFromEditors(true);
+
+  auto markupsNode = vtkMRMLLiverResectionNode::SafeDownCast(
+      this->GetMRMLScene()->AddNewNodeByClass("vtkMRMLLiverResectionNode",
+                                              newNodeName));
+  if (!markupsNode) {
+    vtkErrorMacro("LoadLiverResections: failed to instantiate liver "
+                  "resection markups node by "
+                  "class vtkMRMLLiverResectionsNode");
+    if (userMessages) {
+      userMessages->AddMessages(storageNode->GetUserMessages());
+    }
+    this->GetMRMLScene()->RemoveNode(storageNode);
+    return nullptr;
+    }
+
+    markupsNode->SetBezierSurfaceNode(bezierNode);
+
+    storageNode->SetFileName(fileName.c_str());
+    // add the nodes to the scene and set up the observation on the storage node
+    markupsNode->SetAndObserveStorageNodeID(storageNode->GetID());
+
+    // read the file
+    char *nodeID = nullptr;
+    if (storageNode->ReadData(markupsNode))
+      {
+      nodeID = markupsNode->GetID();
+      }
+    else
+      {
+      if (userMessages)
+        {
+        userMessages->AddMessages(storageNode->GetUserMessages());
+        }
+      this->GetMRMLScene()->RemoveNode(storageNode);
+      this->GetMRMLScene()->RemoveNode(markupsNode);
+    }
+
+    return nodeID;
+  }

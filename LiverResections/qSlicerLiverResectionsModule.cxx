@@ -45,8 +45,13 @@
 // Liver Resections Logic includes
 #include "vtkSlicerLiverResectionsLogic.h"
 
+// Liver Resections MRML includes
+#include "qSlicerLiverResectionsWriter.h"
+#include "qSlicerLiverResectionsReader.h"
+
 #include <qSlicerModuleManager.h>
 #include <qSlicerCoreApplication.h>
+#include <qSlicerIOManager.h>
 
 //-----------------------------------------------------------------------------
 /// \ingroup Slicer_QtModules_ExtensionTemplate
@@ -128,6 +133,19 @@ QStringList qSlicerLiverResectionsModule::dependencies() const
 void qSlicerLiverResectionsModule::setup()
 {
   this->Superclass::setup();
+
+  auto logic = vtkSlicerLiverResectionsLogic::SafeDownCast(this->logic());
+  if (!logic)
+    {
+    qCritical() << Q_FUNC_INFO << ": cannot get Markups logic.";
+    return;
+    }
+
+  // Register IO
+  qSlicerIOManager* ioManager = qSlicerApplication::application()->ioManager();
+  qSlicerLiverResectionsReader *markupsReader = new qSlicerLiverResectionsReader(logic, this);
+  ioManager->registerIO(markupsReader);
+  ioManager->registerIO(new qSlicerLiverResectionsWriter(this));
 }
 
 //-----------------------------------------------------------------------------
@@ -146,8 +164,7 @@ vtkMRMLAbstractLogic* qSlicerLiverResectionsModule::createLogic()
 //-----------------------------------------------------------------------------
 QStringList qSlicerLiverResectionsModule::associatedNodeTypes() const
 {
-  return QStringList() << "vtkMRMLLiverResectionNode"
-                       << "vtkMRMLLiverResectionDisplayNode";
+  return QStringList() << "vtkMRMLLiverResectionNode";
 }
 
 //-----------------------------------------------------------------------------

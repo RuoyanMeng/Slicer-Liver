@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>563</width>
-    <height>457</height>
+    <width>792</width>
+    <height>570</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,6 +22,127 @@
      <property name="collapsed">
       <bool>false</bool>
      </property>
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="4" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>Liver</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="3">
+       <widget class="qMRMLSegmentSelectorWidget" name="TumorSegmentSelectorWidget">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="segmentationNodeSelectorVisible">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0" colspan="4">
+       <widget class="QPushButton" name="ComputeDistanceMapsPushButton">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Compute Distance Maps</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="3">
+       <widget class="qMRMLNodeComboBox" name="ReferenceVolumeSelector">
+        <property name="nodeTypes">
+         <stringlist>
+          <string>vtkMRMLScalarVolumeNode</string>
+         </stringlist>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Reference Volume:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="3">
+       <widget class="qMRMLSegmentSelectorWidget" name="ParenchymaSegmentSelectorWidget">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="segmentationNodeSelectorVisible">
+         <bool>false</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>Tumor</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0" colspan="3">
+       <widget class="QLabel" name="OutputDistanceMapLabel">
+        <property name="text">
+         <string>Output Distance Map: </string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="3">
+       <widget class="qMRMLNodeComboBox" name="OutputDistanceMapNodeComboBox">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+        <property name="nodeTypes">
+         <stringlist>
+          <string>vtkMRMLVectorVolumeNode</string>
+         </stringlist>
+        </property>
+        <property name="baseName">
+         <string/>
+        </property>
+        <property name="editEnabled">
+         <bool>false</bool>
+        </property>
+        <property name="renameEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="qMRMLNodeComboBox" name="SegmentationSelectorComboBox">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="nodeTypes">
+         <stringlist>
+          <string>vtkMRMLSegmentationNode</string>
+         </stringlist>
+        </property>
+        <property name="showChildNodeTypes">
+         <bool>false</bool>
+        </property>
+        <property name="addEnabled">
+         <bool>false</bool>
+        </property>
+        <property name="removeEnabled">
+         <bool>false</bool>
+        </property>
+        <property name="editEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="selectNodeUponCreation">
+         <bool>true</bool>
+        </property>
+       </widget>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
        <layout class="QGridLayout" name="gridLayout">
@@ -179,13 +300,10 @@
         </item>
        </layout>
       </item>
-      <item>
-       <widget class="QPushButton" name="ComputeDistanceMapsPushButton">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
+      <item row="1" column="0">
+       <widget class="QLabel" name="SegmentationNodeLabel">
         <property name="text">
-         <string>Compute Distance Maps</string>
+         <string>Segmentation:</string>
         </property>
        </widget>
       </item>
@@ -211,6 +329,11 @@
    <extends>QWidget</extends>
    <header>qMRMLWidget.h</header>
    <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>qMRMLSegmentSelectorWidget</class>
+   <extends>qMRMLWidget</extends>
+   <header>qMRMLSegmentSelectorWidget.h</header>
   </customwidget>
   <customwidget>
    <class>ctkCollapsibleButton</class>
@@ -240,7 +363,7 @@
   <connection>
    <sender>DistanceMapsComputationWidget</sender>
    <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
-   <receiver>TumorLabelMapComboBox</receiver>
+   <receiver>TumorSegmentSelectorWidget</receiver>
    <slot>setMRMLScene(vtkMRMLScene*)</slot>
    <hints>
     <hint type="sourcelabel">
@@ -276,6 +399,54 @@
    <slot>setMRMLScene(vtkMRMLScene*)</slot>
    <hints>
     <hint type="sourcelabel">
+     <x>395</x>
+     <y>289</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>468</x>
+     <y>181</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>DistanceMapsComputationWidget</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>ParenchymaSegmentSelectorWidget</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>395</x>
+     <y>289</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>468</x>
+     <y>397</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>DistanceMapsComputationWidget</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>ReferenceVolumeSelector</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>395</x>
+     <y>289</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>468</x>
+     <y>104</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>DistanceMapsComputationWidget</sender>
+   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
+   <receiver>SegmentationSelectorComboBox</receiver>
+   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <hints>
+    <hint type="sourcelabel">
      <x>310</x>
      <y>314</y>
     </hint>
@@ -286,18 +457,34 @@
    </hints>
   </connection>
   <connection>
-   <sender>DistanceMapsComputationWidget</sender>
-   <signal>mrmlSceneChanged(vtkMRMLScene*)</signal>
-   <receiver>ParenchymaLabelMapNodeComboBox</receiver>
-   <slot>setMRMLScene(vtkMRMLScene*)</slot>
+   <sender>SegmentationSelectorComboBox</sender>
+   <signal>currentNodeChanged(vtkMRMLNode*)</signal>
+   <receiver>ParenchymaSegmentSelectorWidget</receiver>
+   <slot>setCurrentNode(vtkMRMLNode*)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>395</x>
-     <y>289</y>
+     <x>470</x>
+     <y>197</y>
     </hint>
     <hint type="destinationlabel">
-     <x>501</x>
-     <y>110</y>
+     <x>470</x>
+     <y>342</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>SegmentationSelectorComboBox</sender>
+   <signal>currentNodeChanged(vtkMRMLNode*)</signal>
+   <receiver>TumorSegmentSelectorWidget</receiver>
+   <slot>setCurrentNode(vtkMRMLNode*)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>468</x>
+     <y>114</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>468</x>
+     <y>190</y>
     </hint>
    </hints>
   </connection>

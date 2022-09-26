@@ -21,10 +21,16 @@ set(MODULE_INCLUDE_DIRECTORIES
 set(MODULE_SRCS
   qSlicer${MODULE_NAME}Module.cxx
   qSlicer${MODULE_NAME}Module.h
+  qSlicer${MODULE_NAME}Writer.h
+  qSlicer${MODULE_NAME}Writer.cxx
+  qSlicer${MODULE_NAME}Reader.h
+  qSlicer${MODULE_NAME}Reader.cxx
   )
 
 set(MODULE_MOC_SRCS
   qSlicer${MODULE_NAME}Module.h
+  qSlicer${MODULE_NAME}Writer.h
+  qSlicer${MODULE_NAME}Reader.h
   )
 
 set(MODULE_TARGET_LIBRARIES

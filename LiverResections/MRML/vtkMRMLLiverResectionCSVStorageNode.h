@@ -15,9 +15,9 @@
     notice, this list of conditions and the following disclaimer in the
     documentation and/or other materials provided with the distribution.
 
-  * Neither the name of Oslo University Hospital nor the names
-    of Contributors may be used to endorse or promote products derived
-    from this software without specific prior written permission.
+  * Neither the name of Kitware, Inc. nor the names of Contributors
+    may be used to endorse or promote products derived from this
+    software without specific prior written permission.
 
   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
   "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -37,56 +37,45 @@
 
 ==============================================================================*/
 
-#ifndef vtkslicershaderhelper_h_
-#define vtkslicershaderhelper_h_
+#ifndef __vtkmrmlliverresectionsfiducialstoragenode_h_
+#define __vtkmrmlliverresectionsfiducialstoragenode_h_
 
-#include "vtkSlicerLiverMarkupsModuleVTKWidgetsExport.h"
+#include "vtkSlicerLiverResectionsModuleMRMLExport.h"
 
-// MRML includes
-#include <vtkMRMLModelNode.h>
+#include <vtkMRMLMarkupsFiducialStorageNode.h>
 
-// VTK includes
-#include <vtkActor.h>
-#include <vtkCollection.h>
-#include <vtkObject.h>
-#include <vtkWeakPointer.h>
-
-//------------------------------------------------------------------------------
-class vtkCollection;
-class vtkMRMLModelNode;
-class vtkShaderProperty;
-
-//------------------------------------------------------------------------------
-class VTK_SLICER_LIVERMARKUPS_MODULE_VTKWIDGETS_EXPORT vtkSlicerShaderHelper
-: public vtkObject
+class VTK_SLICER_LIVERRESECTIONS_MODULE_MRML_EXPORT vtkMRMLLiverResectionCSVStorageNode : public vtkMRMLMarkupsFiducialStorageNode
 {
-public:
-  static vtkSlicerShaderHelper* New();
-  vtkTypeMacro(vtkSlicerShaderHelper, vtkObject);
+
+  public:
+  static vtkMRMLLiverResectionCSVStorageNode *New();
+  vtkTypeMacro(vtkMRMLLiverResectionCSVStorageNode, vtkMRMLMarkupsFiducialStorageNode);
   void PrintSelf(ostream& os, vtkIndent indent) override;
 
-  void SetTargetModelNode(vtkMRMLModelNode* modelNode){this->TargetModelNode = modelNode; this->Modified();}
-  vtkMRMLModelNode* GetTargetModelNode(){return this->TargetModelNode;}
-  vtkCollection* GetTargetModelVertexVBOs(){return this->TargetModelVertexVBOs;}
-  vtkCollection* GetTargetActors(){return this->TargetModelActors;}
-  void AttachSlicingContourShader();
-  void AttachDistanceContourShader();
+  vtkMRMLNode* CreateNodeInstance() override;
+
+  ///
+  /// Get node XML tag name (like Storage, Model)
+  const char* GetNodeTagName() override {return "LiverResectionFiducialStorage";};
+
+  bool CanReadInReferenceNode(vtkMRMLNode *refNode) override;
 
 protected:
-  vtkWeakPointer<vtkMRMLModelNode> TargetModelNode;
-  vtkNew<vtkCollection> TargetModelVertexVBOs;
-  vtkNew<vtkCollection> TargetModelActors;
+  /// Initialize all the supported write file types
+  void InitializeSupportedReadFileTypes() override;
+
+  /// Initialize all the supported write file types
+  void InitializeSupportedWriteFileTypes() override;
+
+  int WriteDataInternal(vtkMRMLNode *refNode) override;
+  int ReadDataInternal(vtkMRMLNode *refNode) override;
 
 protected:
-  vtkSlicerShaderHelper();
-  ~vtkSlicerShaderHelper() = default;
-
-private:
-  void getShaderProperties(vtkCollection* propertiesCollection);
-
-private:
-  vtkSlicerShaderHelper(const vtkSlicerShaderHelper&) = delete;
-  void operator=(const vtkSlicerShaderHelper&) = delete;
+  vtkMRMLLiverResectionCSVStorageNode();
+  ~vtkMRMLLiverResectionCSVStorageNode() override;
+  vtkMRMLLiverResectionCSVStorageNode(const vtkMRMLLiverResectionCSVStorageNode&);
+  void operator=(const vtkMRMLLiverResectionCSVStorageNode&);
 };
 
-#endif // vtkslicershaderhelper_h_
+
+#endif // __vtkmrmlliverresectionsfiducialstoragenode_h_
