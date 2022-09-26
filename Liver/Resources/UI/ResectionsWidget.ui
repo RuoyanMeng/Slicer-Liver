@@ -254,16 +254,30 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="ctkCheckBox" name="ResectionLockCheckBox">
-           <property name="enabled">
-            <bool>false</bool>
+          <spacer name="horizontalSpacer_5">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
            </property>
-           <property name="layoutDirection">
-            <enum>Qt::LeftToRight</enum>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
            </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="ResectionLockLabel">
            <property name="text">
             <string>Preview resection:</string>
            </property>
+           <property name="margin">
+            <number>0</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="ctkCheckBox" name="ResectionLockCheckBox">
            <property name="tristate">
             <bool>false</bool>
            </property>
@@ -610,7 +624,7 @@
          <item>
           <widget class="ctkCollapsibleGroupBox" name="HepaticContourGroupBox">
            <property name="enabled">
-            <bool>true</bool>
+            <bool>false</bool>
            </property>
            <property name="title">
             <string>Hepatic Contour</string>

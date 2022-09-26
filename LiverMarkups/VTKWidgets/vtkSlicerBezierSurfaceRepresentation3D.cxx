@@ -115,10 +115,10 @@ vtkSlicerBezierSurfaceRepresentation3D::vtkSlicerBezierSurfaceRepresentation3D()
     auto PlaneControlPoints = vtkSmartPointer<vtkPoints>::New();
 
     for(int i=0;i<4;i++){
-        PlaneControlPoints->InsertNextPoint(-30,(i*20),0);
-        PlaneControlPoints->InsertNextPoint(-10,(i*20),0);
-        PlaneControlPoints->InsertNextPoint(10,(i*20),0);
-        PlaneControlPoints->InsertNextPoint(30,(i*20),0);
+        PlaneControlPoints->InsertNextPoint(-60,(i*40),0);
+        PlaneControlPoints->InsertNextPoint(-20,(i*40),0);
+        PlaneControlPoints->InsertNextPoint(20,(i*40),0);
+        PlaneControlPoints->InsertNextPoint(60,(i*40),0);
 
     }
 
@@ -246,7 +246,7 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateFromMRML(vtkMRMLNode *caller,
     if(BezierSurfaceDisplayNode->GetShowResection2D()){
         if(renderers->GetNumberOfItems()!=5){
             std::cout<<"-------------------add new renderer------------------"<<endl;
-            double yViewport[4] = {0.0, 0.7, 0.2, 1.0};
+            double yViewport[4] = {0, 0.6, 0.3, 1.0};
 
             if (renderWindow1->GetNumberOfLayers() < RENDERER_LAYER+1)
             {
