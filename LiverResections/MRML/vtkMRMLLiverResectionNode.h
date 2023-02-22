@@ -319,6 +319,14 @@ class VTK_SLICER_LIVERRESECTIONS_MODULE_MRML_EXPORT vtkMRMLLiverResectionNode
   void SetBezierSurfaceNode(vtkMRMLMarkupsBezierSurfaceNode *node)
   {this->BezierSurfaceNode = node; this->Modified();}
 
+  // Set the EnableARAPParametrization state variable
+  vtkSetMacro(EnableARAPParametrization, bool);
+
+  // Get the EnableARAPParametrization state variable
+  vtkGetMacro(EnableARAPParametrization, bool);
+
+  // Set the EnableARAPParametrization state variable
+  vtkSetMacro(EnableARAPParametrization, int);
 
  protected:
   vtkMRMLLiverResectionNode();
@@ -359,6 +367,7 @@ class VTK_SLICER_LIVERRESECTIONS_MODULE_MRML_EXPORT vtkMRMLLiverResectionNode
   float HepaticContourColor[3];
   float PortalContourColor[3];
   int TextureNumComps;
+  bool EnableARAPParametrization;
 
  private:
   vtkMRMLLiverResectionNode(const vtkMRMLLiverResectionNode&);

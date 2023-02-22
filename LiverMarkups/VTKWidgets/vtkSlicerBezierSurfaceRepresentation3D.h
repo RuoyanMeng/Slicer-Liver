@@ -51,8 +51,11 @@
 // VTK includes
 #include <vtkWeakPointer.h>
 #include <vtkSmartPointer.h>
-#include "vtkOpenGLPolyDataMapper2D.h"
-#include "vtkActor2D.h"
+#include <vtkOpenGLPolyDataMapper2D.h>
+#include <vtkActor2D.h>
+#include <vtkCamera.h>
+
+#include <PythonQt.h>
 //------------------------------------------------------------------------------
 class vtkBezierSurfaceSource;
 class vtkOpenGLActor;
@@ -96,6 +99,7 @@ protected:
   void CreateAndTransferVascularSegmentsTexture(vtkMRMLScalarVolumeNode *node);
   void CreateAndTransferMarkerStyleTexture(vtkMRMLScalarVolumeNode *node);
   void Ratio(bool flexibleBoundery);
+  void ResectogramPlaneCenter();
 
  protected:
   //k Bezier surface releated elements
@@ -108,6 +112,9 @@ protected:
   vtkSmartPointer<vtkOpenGLResection2DPolyDataMapper> BezierSurfaceResectionMapper2D;
   vtkSmartPointer<vtkBezierSurfaceSource> BezierPlane;
   vtkSmartPointer<vtkDataArray> p;
+  vtkSmartPointer<vtkPoints> PlaneControlPoints;
+  vtkSmartPointer<vtkCamera> ResectogramCamera;
+  vtkSmartPointer<vtkCellArray> PlaneFaces;
 
   // Control polygon related elements
   vtkSmartPointer<vtkPolyData> ControlPolygonPolyData;

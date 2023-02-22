@@ -91,6 +91,10 @@
 #include <vtkTypeFloat32Array.h>
 #include <vtkImageCast.h>
 #include <vtkRenderWindowInteractor.h>
+#include <vtkTriangleFilter.h>
+//
+#include "PythonQt.h"
+
 
 //------------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerBezierSurfaceRepresentation3D);
@@ -112,20 +116,24 @@ vtkSlicerBezierSurfaceRepresentation3D::vtkSlicerBezierSurfaceRepresentation3D()
 
   this->BezierPlane = vtkSmartPointer<vtkBezierSurfaceSource>::New();
   this->BezierPlane->SetResolution(20,20);
-  auto PlaneControlPoints = vtkSmartPointer<vtkPoints>::New();
+  this->PlaneControlPoints = vtkSmartPointer<vtkPoints>::New();
 
   for(int i=0;i<4;i++){
     PlaneControlPoints->InsertNextPoint(-60,(i*40),0);
     PlaneControlPoints->InsertNextPoint(-20,(i*40),0);
     PlaneControlPoints->InsertNextPoint(20,(i*40),0);
     PlaneControlPoints->InsertNextPoint(60,(i*40),0);
-
     }
 
-  this->BezierPlane->SetControlPoints(PlaneControlPoints);
+  this->BezierPlane->SetControlPoints(this->PlaneControlPoints);
   this->BezierPlane->Update();
 
-  auto BezierPlanePoints = BezierPlane->GetOutput()->GetPoints()->GetData();
+  // set camera
+  this->ResectogramCamera = vtkSmartPointer<vtkCamera>::New();
+  ResectogramPlaneCenter();
+
+
+  auto BezierPlanePoints = this->BezierPlane->GetOutput()->GetPoints()->GetData();
   BezierPlanePoints->SetName("BSPlanePoints");
   this->BezierSurfaceNormals->GetOutput()->GetPointData()->AddArray(BezierPlanePoints);
 
@@ -150,7 +158,7 @@ vtkSlicerBezierSurfaceRepresentation3D::vtkSlicerBezierSurfaceRepresentation3D()
   //   }
 
   this->BezierSurfaceResectionMapper2D = vtkSmartPointer<vtkOpenGLResection2DPolyDataMapper>::New();
-  this->BezierSurfaceResectionMapper2D->SetInputConnection(BezierPlane->GetOutputPort());
+  this->BezierSurfaceResectionMapper2D->SetInputConnection(this->BezierPlane->GetOutputPort());
   this->BezierSurfaceActor2D = vtkSmartPointer<vtkOpenGLActor>::New();
   this->BezierSurfaceActor2D->SetMapper(this->BezierSurfaceResectionMapper2D);
 
@@ -256,8 +264,9 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateFromMRML(vtkMRMLNode* caller,
     if(renderers->GetNumberOfItems()!=5)
       {
       std::cout<<"-------------------add new renderer------------------"<<endl;
+      //set camera center
+      //
       double yViewport[4] = {0, 0.6, 0.3, 1.0};
-
       if (renderWindow1->GetNumberOfLayers() < RENDERER_LAYER+1)
         {
         renderWindow1->SetNumberOfLayers( RENDERER_LAYER+1 );
@@ -265,6 +274,7 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateFromMRML(vtkMRMLNode* caller,
       auto CoRenderer2D = vtkSmartPointer<vtkRenderer>::New();
       CoRenderer2D->SetLayer(RENDERER_LAYER);
       CoRenderer2D->InteractiveOff();
+      CoRenderer2D->SetActiveCamera(this->ResectogramCamera );
       CoRenderer2D->AddActor(this->BezierSurfaceActor2D);
       CoRenderer2D->SetViewport(yViewport);
       renderWindow1->AddRenderer(CoRenderer2D);
@@ -474,6 +484,60 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateBezierSurfaceGeometry(vtkMRML
     auto BezierSurfaceDisplayNode = vtkMRMLMarkupsBezierSurfaceDisplayNode::SafeDownCast(node->GetDisplayNode());
 
     Ratio(BezierSurfaceDisplayNode->GetEnableFlexibleBoundary());
+    if (BezierSurfaceDisplayNode->GetShowResection2D()){
+      if(BezierSurfaceDisplayNode->GetEnableARAPParametrization()){
+
+        PythonQt::init();
+        PythonQtObjectPtr context = PythonQt::self()->getMainModule();
+        QVariantList v;
+        QVariantList f;
+        for(int i = 0; i < 400; i++){
+          v.append(QVariantList{this->p->GetTuple3(i)[0], this->p->GetTuple3(i)[1], this->p->GetTuple3(i)[2]});
+          }
+        auto tri = vtkSmartPointer<vtkTriangleFilter>::New();
+        tri->SetInputData(this->BezierSurfaceSource->GetOutput());
+        tri->Update();
+        auto facesTri = tri->GetOutput()->GetPolys();
+        auto facesConnectivityTri = facesTri->GetConnectivityArray64();
+        for(int i = 0; i< tri->GetOutput()->GetNumberOfPolys(); i++){
+          f.append(QVariantList{static_cast<int>(facesConnectivityTri->GetTuple(i*3)[0]), static_cast<int>(facesConnectivityTri->GetTuple(i*3+1)[0]), static_cast<int>(facesConnectivityTri->GetTuple(i*3+2)[0])});
+          }
+
+        context.addVariable("v", v);
+        context.addVariable("f", f);
+        context.evalScript(
+          "def ARAP():\n "
+          "  import igl, math, numpy;\n "
+          "  vn = numpy.asarray(v).reshape(int(len(v)/3),3).astype(float);\n "
+          "  fn = numpy.asarray(f).reshape(int(len(f)/3),3).astype(int);\n "
+          "  bnd = igl.boundary_loop(fn);\n "
+          "  bnd_uv = igl.map_vertices_to_circle(vn, bnd);\n "
+          "  uv = igl.harmonic_weights(vn, fn, bnd, bnd_uv, 1);\n "
+          "  arap = igl.ARAP(vn, fn, 2, numpy.zeros(0));\n "
+          "  uva = arap.solve(numpy.zeros((0, 0)), uv);\n "
+          "  degree = 40/180*math.pi;\n "
+          "  uva_ = numpy.asarray([numpy.dot(uva.T[1], numpy.sin(degree))+numpy.dot(uva.T[0], numpy.cos(degree)),\n"
+          "                       numpy.dot(uva.T[1], numpy.cos(degree))-numpy.dot(uva.T[0], numpy.sin(degree))]).T;\n "
+          "  res = uva_.flatten();\n "
+          "  return res;\n");
+
+        QVariant result = context.call("ARAP");
+        QVariantList reL = result.toList();
+        auto points2d = vtkSmartPointer<vtkPoints>::New();
+        for (int i=0;i<400;i++){
+          points2d->InsertNextPoint(reL[i*2].toDouble(),reL[i*2+1].toDouble(), 0.0);
+          }
+        std::cout<<">>>>>>>>>>>>ARAP>>>>>>>>>>>>>>>>>>>>>>>"<<endl;
+        this->BezierPlane->GetOutput()->SetPoints(points2d);
+        this->BezierPlane->GetOutput()->SetPolys(facesTri);
+        ResectogramPlaneCenter();
+        }
+      else {
+        this->BezierPlane->SetControlPoints(this->PlaneControlPoints);
+        this->BezierPlane->Update();
+        ResectogramPlaneCenter();
+        }
+      }
 
 
     if(this->BezierPlane->GetOutput()->GetPointData()->GetArray("BSPoints")){
@@ -713,4 +777,12 @@ void vtkSlicerBezierSurfaceRepresentation3D::Ratio(bool flexibleBoundery){
     matR[1] = 1;
     }
   this->BezierSurfaceResectionMapper2D->SetMatRatio(matR);
+}
+
+void vtkSlicerBezierSurfaceRepresentation3D::ResectogramPlaneCenter(){
+  double bounds[6];
+  this->BezierPlane->GetOutput()->GetBounds(bounds);
+  double center[3] = {(bounds[0]+bounds[1])/2, (bounds[2]+bounds[3])/2, 100.0};
+  this->ResectogramCamera->SetPosition(center[0], center[1], center[2] * 3);
+  this->ResectogramCamera->SetFocalPoint(center[0], center[1], center[2]);
 }

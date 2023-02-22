@@ -90,9 +90,9 @@ class VTK_SLICER_LIVERMARKUPS_MODULE_MRML_EXPORT vtkMRMLMarkupsBezierSurfaceDisp
   void SetShowResection2D(int value)
   { this->ShowResection2D = value!=0?1:0; this->Modified();}
 
-  /// Set the Resection2D state variable
+  /// Set the EnableFlexibleBoundary state variable
   vtkSetMacro(EnableFlexibleBoundary, bool);
-  /// Get the Resection2D state variable
+  /// Get the EnableFlexibleBoundary state variable
   vtkGetMacro(EnableFlexibleBoundary, bool);
   /// Get the Resection2D state variable as integer
   int GetEnableFlexibleBoundary() const
@@ -100,6 +100,17 @@ class VTK_SLICER_LIVERMARKUPS_MODULE_MRML_EXPORT vtkMRMLMarkupsBezierSurfaceDisp
   /// set the Resection2D state variable as integer
   void SetEnableFlexibleBoundary(int value)
   { this->EnableFlexibleBoundary = value!=0?1:0; this->Modified();}
+
+  /// Set the EnableARAPParametrization state variable
+  vtkSetMacro(EnableARAPParametrization, bool);
+  /// Get the EnableARAPParametrization state variable
+  vtkGetMacro(EnableARAPParametrization, bool);
+  /// Get the Resection2D state variable as integer
+  int GetEnableARAPParametrization() const
+  { return static_cast<int>(this->EnableARAPParametrization);}
+  /// set the Resection2D state variable as integer
+  void SetEnableARAPParametrization(int value)
+  { this->EnableARAPParametrization = value!=0?1:0; this->Modified();}
 
   /// Set the clipout state variable
   vtkSetMacro(WidgetVisibility, bool);
@@ -174,7 +185,7 @@ protected:
   float PortalContourColor[3];
   int TextureNumComps;
   bool EnableFlexibleBoundary;
-
+  bool EnableARAPParametrization;
 
 protected:
   vtkMRMLMarkupsBezierSurfaceDisplayNode();
