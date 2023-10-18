@@ -281,6 +281,15 @@ class VTK_SLICER_LIVERRESECTIONS_MODULE_MRML_EXPORT vtkMRMLLiverResectionNode
   // Set the EnableFlexibleBoundary state variable
   vtkSetMacro(EnableFlexibleBoundary, int);
 
+  // Set the EnableARAPParametrization state variable
+  vtkSetMacro(EnableARAPParametrization, bool);
+
+  // Get the EnableARAPParametrization state variable
+  vtkGetMacro(EnableARAPParametrization, bool);
+
+  // Set the EnableARAPParametrization state variable
+  vtkSetMacro(EnableARAPParametrization, int);
+
   // Get HepaticContourThickness margin
   vtkGetMacro(HepaticContourThickness, double);
 
@@ -305,6 +314,12 @@ class VTK_SLICER_LIVERRESECTIONS_MODULE_MRML_EXPORT vtkMRMLLiverResectionNode
   // Get PortalContourColor
   vtkGetVector3Macro(PortalContourColor, float);
 
+  // Set InitializeRatio
+  vtkSetVector3Macro(InitializeRatio, float);
+
+  // Get InitializeRatio
+  vtkGetVector3Macro(InitializeRatio, float);
+
   // Get the TextureNumComps state variable
   vtkGetMacro(TextureNumComps, int);
 
@@ -318,15 +333,6 @@ class VTK_SLICER_LIVERRESECTIONS_MODULE_MRML_EXPORT vtkMRMLLiverResectionNode
   // Set bezier surface
   void SetBezierSurfaceNode(vtkMRMLMarkupsBezierSurfaceNode *node)
   {this->BezierSurfaceNode = node; this->Modified();}
-
-  // Set the EnableARAPParametrization state variable
-  vtkSetMacro(EnableARAPParametrization, bool);
-
-  // Get the EnableARAPParametrization state variable
-  vtkGetMacro(EnableARAPParametrization, bool);
-
-  // Set the EnableARAPParametrization state variable
-  vtkSetMacro(EnableARAPParametrization, int);
 
  protected:
   vtkMRMLLiverResectionNode();
@@ -368,6 +374,7 @@ class VTK_SLICER_LIVERRESECTIONS_MODULE_MRML_EXPORT vtkMRMLLiverResectionNode
   float PortalContourColor[3];
   int TextureNumComps;
   bool EnableARAPParametrization;
+  float InitializeRatio[2];
 
  private:
   vtkMRMLLiverResectionNode(const vtkMRMLLiverResectionNode&);

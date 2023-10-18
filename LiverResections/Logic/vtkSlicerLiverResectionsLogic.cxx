@@ -184,6 +184,7 @@ void vtkSlicerLiverResectionsLogic::ProcessMRMLNodesEvents(vtkObject *caller,
         vtkMRMLMarkupsBezierSurfaceDisplayNode::SafeDownCast(bezierSurfaceNode->GetDisplayNode());
       if (bezierSurfaceDisplayNode)
         {
+        bezierSurfaceDisplayNode->SetInitializeRatio(this->InitializeRatio);
         bezierSurfaceDisplayNode->SetEnableARAPParametrization(resectionNode->GetEnableARAPParametrization());
         bezierSurfaceDisplayNode->SetShowResection2D(resectionNode->GetShowResection2D());
         bezierSurfaceDisplayNode->SetEnableFlexibleBoundary(resectionNode->GetEnableFlexibleBoundary());
@@ -852,6 +853,9 @@ void vtkSlicerLiverResectionsLogic::UpdateBezierWidgetOnInitialization(vtkMRMLMa
   auto planeControlPoints = planeSource->GetOutput()->GetPoints();
   bezierSurfaceNode->SetControlPointPositionsWorld(planeControlPoints);
 
+  planeControlPoints->Print(std::cout);
+  InitializeSurfaceRatio(planeControlPoints);
+
   auto bezierDisplayNode = bezierSurfaceNode->GetDisplayNode();
   if (!bezierDisplayNode)
     {
@@ -1035,3 +1039,23 @@ char *vtkSlicerLiverResectionsLogic::LoadLiverResectionFromFcsv(const std::strin
 
     return nodeID;
   }
+
+void vtkSlicerLiverResectionsLogic::InitializeSurfaceRatio(vtkPoints *points){
+
+  if (points->GetNumberOfPoints() == 16)
+    {
+    double point0[3], point3[3], point12[3];
+    points->GetPoint(0,point0);
+    points->GetPoint(3,point3);
+    points->GetPoint(12,point12);
+    auto d03 = sqrt(pow(point0[0]-point3[0],2.0)+pow(point0[1]-point3[1],2.0)+pow(point0[2]-point3[2],2.0));
+    auto d012 = sqrt(pow(point0[0]-point12[0],2.0)+pow(point0[1]-point12[1],2.0)+pow(point0[2]-point12[2],2.0));
+    if(d03>=d012){
+      this->InitializeRatio[0] = 1;
+      this->InitializeRatio[1] = d012/d03;
+      }else{
+      this->InitializeRatio[0] = d03/d012;
+      this->InitializeRatio[1] = 1;
+      }
+    }
+}

@@ -164,6 +164,10 @@ class VTK_SLICER_LIVERMARKUPS_MODULE_MRML_EXPORT vtkMRMLMarkupsBezierSurfaceDisp
   vtkGetVector3Macro(PortalContourColor, float);
   /// Set the resection color
   vtkSetVector3Macro(PortalContourColor, float);
+  /// Get the resection color
+  vtkGetVector3Macro(InitializeRatio, float);
+  /// Set the resection color
+  vtkSetVector3Macro(InitializeRatio, float);
   /// Get the TextureNumComps
   vtkGetMacro(TextureNumComps, int);
   /// Set the TextureNumComps
@@ -186,6 +190,7 @@ protected:
   int TextureNumComps;
   bool EnableFlexibleBoundary;
   bool EnableARAPParametrization;
+  float InitializeRatio[2];
 
 protected:
   vtkMRMLMarkupsBezierSurfaceDisplayNode();

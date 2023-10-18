@@ -225,7 +225,7 @@ class LiverWidget(ScriptedLoadableModuleWidget):
     self.resectogramWidget.PortalContourThicknessSpinBox.connect('valueChanged(double)', self.onPortalContourThicknessChanged)
     self.resectogramWidget.PortalContourColorPickerButton.connect('colorChanged(QColor)', self.onPortalContourColorChanged)
     self.resectogramWidget.VascularSegmentsNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onVascularSegmentsNodeChanged)
-
+    self.resectogramWidget.ResectogramSizeSliderWidget.connect('valueChanged(double)', self.onResectogramSizeSliderChanged)
 
   def onDistanceMapParameterChanged(self):
     """
@@ -240,9 +240,6 @@ class LiverWidget(ScriptedLoadableModuleWidget):
     self.distanceMapsWidget.ComputeDistanceMapsPushButton.setEnabled(None not in [node1, node2, node5])
 
   def onDownSampleCheckBoxChanged(self):
-    """
-    This function is triggered when downsampling is enabled
-    """
     self.distanceMapsWidget.DownsamplingRateGroupBox.setEnabled(self.distanceMapsWidget.DownSampleCheckBox.isChecked())
 
   def onResectionNodeChanged(self):
@@ -386,6 +383,16 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         self._currentResectionNode.SetShowResection2D(False)
 
     self._currentResectionNode = activeResectionNode
+
+  def onResectogramSizeSliderChanged(self):
+    if self._currentResectionNode:
+      if self.resectogramWidget.Resection2DCheckBox.isChecked():
+        ymin = self.resectogramWidget.ResectogramSizeSliderWidget.value
+        view = slicer.app.layoutManager().threeDWidget(0).threeDView()
+        renderers = view.renderWindow().GetRenderers()
+        renderer2D = renderers.GetItemAsObject(4)
+        renderer2D.SetViewport([0.0, ymin, 0.3, 1.0])
+        view.forceRender()
 
   def onResectionDistanceMapNodeChanged(self):
     """
@@ -667,6 +674,7 @@ class LiverWidget(ScriptedLoadableModuleWidget):
     This function is called when the ARAPParametrizationCheckBox checkbox changes.
     """
     if self._currentResectionNode:
+      self._currentResectionNode.SetEnableARAPParametrization(self.resectogramWidget.ARAPParametrizationCheckBox.isChecked())
 
       if self.resectogramWidget.ARAPParametrizationCheckBox.isChecked():
         BSNode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLMarkupsBezierSurfaceNode")

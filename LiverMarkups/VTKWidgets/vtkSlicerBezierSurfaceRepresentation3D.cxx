@@ -483,62 +483,19 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateBezierSurfaceGeometry(vtkMRML
     this->p->SetName("BSPoints");
     auto BezierSurfaceDisplayNode = vtkMRMLMarkupsBezierSurfaceDisplayNode::SafeDownCast(node->GetDisplayNode());
 
-    Ratio(BezierSurfaceDisplayNode->GetEnableFlexibleBoundary());
-    if (BezierSurfaceDisplayNode->GetShowResection2D()){
-      if(BezierSurfaceDisplayNode->GetEnableARAPParametrization()){
-
-        PythonQt::init();
-        PythonQtObjectPtr context = PythonQt::self()->getMainModule();
-        QVariantList v;
-        QVariantList f;
-        for(int i = 0; i < 400; i++){
-          v.append(QVariantList{this->p->GetTuple3(i)[0], this->p->GetTuple3(i)[1], this->p->GetTuple3(i)[2]});
-          }
-        auto tri = vtkSmartPointer<vtkTriangleFilter>::New();
-        tri->SetInputData(this->BezierSurfaceSource->GetOutput());
-        tri->Update();
-        auto facesTri = tri->GetOutput()->GetPolys();
-        auto facesConnectivityTri = facesTri->GetConnectivityArray64();
-        for(int i = 0; i< tri->GetOutput()->GetNumberOfPolys(); i++){
-          f.append(QVariantList{static_cast<int>(facesConnectivityTri->GetTuple(i*3)[0]), static_cast<int>(facesConnectivityTri->GetTuple(i*3+1)[0]), static_cast<int>(facesConnectivityTri->GetTuple(i*3+2)[0])});
-          }
-
-        context.addVariable("v", v);
-        context.addVariable("f", f);
-        context.evalScript(
-          "def ARAP():\n "
-          "  import igl, math, numpy;\n "
-          "  vn = numpy.asarray(v).reshape(int(len(v)/3),3).astype(float);\n "
-          "  fn = numpy.asarray(f).reshape(int(len(f)/3),3).astype(int);\n "
-          "  bnd = igl.boundary_loop(fn);\n "
-          "  bnd_uv = igl.map_vertices_to_circle(vn, bnd);\n "
-          "  uv = igl.harmonic_weights(vn, fn, bnd, bnd_uv, 1);\n "
-          "  arap = igl.ARAP(vn, fn, 2, numpy.zeros(0));\n "
-          "  uva = arap.solve(numpy.zeros((0, 0)), uv);\n "
-          "  degree = 40/180*math.pi;\n "
-          "  uva_ = numpy.asarray([numpy.dot(uva.T[1], numpy.sin(degree))+numpy.dot(uva.T[0], numpy.cos(degree)),\n"
-          "                       numpy.dot(uva.T[1], numpy.cos(degree))-numpy.dot(uva.T[0], numpy.sin(degree))]).T;\n "
-          "  res = uva_.flatten();\n "
-          "  return res;\n");
-
-        QVariant result = context.call("ARAP");
-        QVariantList reL = result.toList();
-        auto points2d = vtkSmartPointer<vtkPoints>::New();
-        for (int i=0;i<400;i++){
-          points2d->InsertNextPoint(reL[i*2].toDouble(),reL[i*2+1].toDouble(), 0.0);
-          }
-        std::cout<<">>>>>>>>>>>>ARAP>>>>>>>>>>>>>>>>>>>>>>>"<<endl;
-        this->BezierPlane->GetOutput()->SetPoints(points2d);
-        this->BezierPlane->GetOutput()->SetPolys(facesTri);
-        ResectogramPlaneCenter();
-        }
-      else {
-        this->BezierPlane->SetControlPoints(this->PlaneControlPoints);
-        this->BezierPlane->Update();
-        ResectogramPlaneCenter();
-        }
-      }
-
+    float matR[2];
+    matR[0] = 1;
+    matR[1] = 1;
+    if (BezierSurfaceDisplayNode->GetEnableFlexibleBoundary()){
+      LSCM();
+    }else if(BezierSurfaceDisplayNode->GetEnableARAPParametrization()){
+      ARAP();
+    }else{
+      float matR[2];
+      matR[0] = 1;
+      matR[1] = 0.668628;
+    }
+    this->BezierSurfaceResectionMapper2D->SetMatRatio(matR);
 
     if(this->BezierPlane->GetOutput()->GetPointData()->GetArray("BSPoints")){
       this->BezierPlane->GetOutput()->GetPointData()->RemoveArray("BSPoints");
@@ -742,41 +699,100 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateControlPolygonDisplay(vtkMRML
 }
 
 //----------------------------------------------------------------------
-void vtkSlicerBezierSurfaceRepresentation3D::Ratio(bool flexibleBoundery){
-
-  float matR[2];
-  if (flexibleBoundery)
-    {
-    double disU = 0, disV = 0;
-    std::vector<double> p0u = {this->p->GetTuple3(0)[0],this->p->GetTuple3(0)[1],this->p->GetTuple3(0)[2]};
-    std::vector<double> p0v = {this->p->GetTuple3(0)[0],this->p->GetTuple3(0)[1],this->p->GetTuple3(0)[2]};
-
-    for(int i = 1; i<20; i++){
-      std::vector<double> p1 = {this->p->GetTuple3(i)[0],this->p->GetTuple3(i)[1],this->p->GetTuple3(i)[2]};
-      std::vector<double> p2 = {this->p->GetTuple3(20*i)[0],this->p->GetTuple3(20*i)[1],this->p->GetTuple3(20*i)[2]};
-
-      auto d01 = sqrt(pow(p0u[0]-p1[0],2.0)+pow(p0u[1]-p1[1],2.0)+pow(p0u[2]-p1[2],2.0));
-      disU = disU + d01;
-      auto d02 = sqrt(pow(p0v[0]-p2[0],2.0)+pow(p0v[1]-p2[1],2.0)+pow(p0v[2]-p2[2],2.0));
-      disV  = disV + d02;
-      p0u = p1;
-      p0v = p2;
-      }
-
-    if(disU>=disV){
-      matR[0] = 1;
-      matR[1] = disV/disU;
-      }else{
-      matR[0] = disU/disV;
-      matR[1] = 1;
-      }
+void vtkSlicerBezierSurfaceRepresentation3D::LSCM()
+{
+  PythonQt::init();
+  PythonQtObjectPtr context = PythonQt::self()->getMainModule();
+  QVariantList v;
+  QVariantList f;
+  for(int i = 0; i < 400; i++){
+    v.append(QVariantList{this->p->GetTuple3(i)[0], this->p->GetTuple3(i)[1], this->p->GetTuple3(i)[2]});
     }
-  else
-    {
-    matR[0] = 1;
-    matR[1] = 1;
+  auto tri = vtkSmartPointer<vtkTriangleFilter>::New();
+  tri->SetInputData(this->BezierSurfaceSource->GetOutput());
+  tri->Update();
+  auto facesTri = tri->GetOutput()->GetPolys();
+  auto facesConnectivityTri = facesTri->GetConnectivityArray64();
+  for(int i = 0; i< tri->GetOutput()->GetNumberOfPolys(); i++){
+    f.append(QVariantList{static_cast<int>(facesConnectivityTri->GetTuple(i*3)[0]), static_cast<int>(facesConnectivityTri->GetTuple(i*3+1)[0]), static_cast<int>(facesConnectivityTri->GetTuple(i*3+2)[0])});
     }
-  this->BezierSurfaceResectionMapper2D->SetMatRatio(matR);
+
+  context.addVariable("v", v);
+  context.addVariable("f", f);
+  context.evalScript(
+    "def LSCM():\n "
+    "  import igl, math, numpy;\n "
+    "  vn = numpy.asarray(v).reshape(int(len(v)/3),3).astype(float);\n "
+    "  fn = numpy.asarray(f).reshape(int(len(f)/3),3).astype(int);\n "
+    "  bnd = igl.boundary_loop(fn);\n "
+    "  b = numpy.array([2,1]);"
+    "  b[0] = bnd[0];"
+    "  b[1] = bnd[int(bnd.size/2)];"
+    "  bc = numpy.array([[0.0,0.0],[1.0,0.0]]);"
+    "  _, uv = igl.lscm(vn, fn, b, bc);\n "
+    "  degree = 55/180*math.pi;\n "
+    "  uv_ = numpy.asarray([numpy.dot(uv.T[1], numpy.sin(degree))+numpy.dot(uv.T[0], numpy.cos(degree)),\n"
+    "                       numpy.dot(uv.T[1], numpy.cos(degree))-numpy.dot(uv.T[0], numpy.sin(degree))]).T;\n "
+    "  res = uv_.flatten()*100;\n "
+    "  return res;\n");
+
+  QVariant result = context.call("LSCM");
+  QVariantList reL = result.toList();
+  auto points2d = vtkSmartPointer<vtkPoints>::New();
+  for (int i=0;i<400;i++){
+    points2d->InsertNextPoint(reL[i*2].toDouble(),reL[i*2+1].toDouble(), 0.0);
+    }
+  this->BezierPlane->GetOutput()->SetPoints(points2d);
+  this->BezierPlane->GetOutput()->SetPolys(facesTri);
+  ResectogramPlaneCenter();
+}
+
+//----------------------------------------------------------------------
+void vtkSlicerBezierSurfaceRepresentation3D::ARAP()
+{
+  PythonQt::init();
+  PythonQtObjectPtr context = PythonQt::self()->getMainModule();
+  QVariantList v;
+  QVariantList f;
+  for(int i = 0; i < 400; i++){
+    v.append(QVariantList{this->p->GetTuple3(i)[0], this->p->GetTuple3(i)[1], this->p->GetTuple3(i)[2]});
+    }
+  auto tri = vtkSmartPointer<vtkTriangleFilter>::New();
+  tri->SetInputData(this->BezierSurfaceSource->GetOutput());
+  tri->Update();
+  auto facesTri = tri->GetOutput()->GetPolys();
+  auto facesConnectivityTri = facesTri->GetConnectivityArray64();
+  for(int i = 0; i< tri->GetOutput()->GetNumberOfPolys(); i++){
+    f.append(QVariantList{static_cast<int>(facesConnectivityTri->GetTuple(i*3)[0]), static_cast<int>(facesConnectivityTri->GetTuple(i*3+1)[0]), static_cast<int>(facesConnectivityTri->GetTuple(i*3+2)[0])});
+    }
+
+  context.addVariable("v", v);
+  context.addVariable("f", f);
+
+  context.evalScript(
+    "def ARAP():\n "
+    "  import igl, math, numpy;\n "
+    "  vn = numpy.asarray(v).reshape(int(len(v)/3),3).astype(float);\n "
+    "  fn = numpy.asarray(f).reshape(int(len(f)/3),3).astype(int);\n "
+    "  bnd = igl.boundary_loop(fn);\n "
+    "  bnd_uv = igl.map_vertices_to_circle(vn, bnd);\n "
+    "  uv = igl.harmonic_weights(vn, fn, bnd, bnd_uv, 1);\n "
+    "  arap = igl.ARAP(vn, fn, 2, numpy.zeros(0));\n "
+    "  uva = arap.solve(numpy.zeros((0, 0)), uv);\n "
+    "  degree = 40/180*math.pi;\n "
+    "  uva_ = numpy.asarray([numpy.dot(uva.T[1], numpy.sin(degree))+numpy.dot(uva.T[0], numpy.cos(degree)),\n"
+    "                       numpy.dot(uva.T[1], numpy.cos(degree))-numpy.dot(uva.T[0], numpy.sin(degree))]).T;\n "
+    "  res = uva_.flatten();\n "
+    "  return res;\n");
+  QVariant result = context.call("ARAP");
+  QVariantList reL = result.toList();
+  auto points2d = vtkSmartPointer<vtkPoints>::New();
+  for (int i=0;i<400;i++){
+    points2d->InsertNextPoint(reL[i*2].toDouble(),reL[i*2+1].toDouble(), 0.0);
+    }
+  this->BezierPlane->GetOutput()->SetPoints(points2d);
+  this->BezierPlane->GetOutput()->SetPolys(facesTri);
+  ResectogramPlaneCenter();
 }
 
 void vtkSlicerBezierSurfaceRepresentation3D::ResectogramPlaneCenter(){

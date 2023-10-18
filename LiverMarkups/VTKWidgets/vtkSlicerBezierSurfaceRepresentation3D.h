@@ -98,7 +98,8 @@ protected:
   void CreateAndTransferDistanceMapTexture(vtkMRMLScalarVolumeNode* node, int numComps);
   void CreateAndTransferVascularSegmentsTexture(vtkMRMLScalarVolumeNode *node);
   void CreateAndTransferMarkerStyleTexture(vtkMRMLScalarVolumeNode *node);
-  void Ratio(bool flexibleBoundery);
+  void LSCM();
+  void ARAP();
   void ResectogramPlaneCenter();
 
  protected:

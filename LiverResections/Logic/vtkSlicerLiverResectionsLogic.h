@@ -102,6 +102,8 @@ public:
   char* LoadLiverResectionFromFcsv(const std::string& fileName,
                                    const std::string& nodeName/*=nullptr*/,
                                    vtkMRMLMessageCollection* userMessages/*=nullptr*/);
+  void InitializeSurfaceRatio(vtkPoints *bezierSurfaceNode);
+
 protected:
   vtkSlicerLiverResectionsLogic();
   ~vtkSlicerLiverResectionsLogic() override;
@@ -158,6 +160,8 @@ protected:
 
   std::map<vtkWeakPointer<vtkMRMLMarkupsBezierSurfaceNode>,
            vtkWeakPointer<vtkMRMLMarkupsNode>> BezierToInitializationMap;
+
+  float InitializeRatio[2];
 
 private:
   vtkSlicerLiverResectionsLogic(const vtkSlicerLiverResectionsLogic &) = delete;
