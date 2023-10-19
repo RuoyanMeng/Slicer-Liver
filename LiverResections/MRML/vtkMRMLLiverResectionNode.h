@@ -156,13 +156,6 @@ class VTK_SLICER_LIVERRESECTIONS_MODULE_MRML_EXPORT vtkMRMLLiverResectionNode
   void SetVascularSegmentsVolumeNode(vtkMRMLScalarVolumeNode *vascularSegmentsVolumeNode)
   {this->VascularSegmentsVolumeNode = vascularSegmentsVolumeNode; this->Modified();}
 
-  // Get Marker Style Volume
-  vtkMRMLScalarVolumeNode *GetMarkerStyleVolumeNode() const
-  { return this->MarkerStyleVolumeNode; }
-
-  // Set Marker Style Volume
-  void SetMarkerStyleVolumeNode(vtkMRMLScalarVolumeNode *markerStyleVolumeNode)
-  {this->MarkerStyleVolumeNode = markerStyleVolumeNode; this->Modified();}
   /// This is a function to set the initialization control points as vtkPoints.
   /// Since the expected number of points for the initialization is two, the
   /// function requires at least two points in the vtkPoints provided; if more
@@ -272,6 +265,15 @@ class VTK_SLICER_LIVERRESECTIONS_MODULE_MRML_EXPORT vtkMRMLLiverResectionNode
   // Set the ShowResection2D state variable
   vtkSetMacro(ShowResection2D, int);
 
+  // Set the MirrorDisplay state variable
+  vtkSetMacro(MirrorDisplay, bool);
+
+  // Get the MirrorDisplay state variable
+  vtkGetMacro(MirrorDisplay, bool);
+
+  // Set the MirrorDisplay state variable
+  vtkSetMacro(MirrorDisplay, int);
+
   // Set the EnableFlexibleBoundary state variable
   vtkSetMacro(EnableFlexibleBoundary, bool);
 
@@ -375,6 +377,7 @@ class VTK_SLICER_LIVERRESECTIONS_MODULE_MRML_EXPORT vtkMRMLLiverResectionNode
   int TextureNumComps;
   bool EnableARAPParametrization;
   float InitializeRatio[2];
+  bool MirrorDisplay;
 
  private:
   vtkMRMLLiverResectionNode(const vtkMRMLLiverResectionNode&);

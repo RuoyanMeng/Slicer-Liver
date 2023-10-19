@@ -102,7 +102,6 @@ class vtkOpenGLResection2DPolyDataMapper::vtkInternal
   float PortalContourColor[3];
   float HepaticContourColor[3];
   int TextureNumComps;
-  unsigned int MarkerStyleAvailable;
   float MatRatio[2];
 };
 
@@ -198,15 +197,12 @@ void vtkOpenGLResection2DPolyDataMapper::ReplaceShaderValues(
     "uniform vec4 colorChart[8];\n"
     "uniform float uResectionMargin;\n"
     "uniform float uUncertaintyMargin;\n"
-    "uniform float uResectionOpacity;\n"
     "uniform vec3 uResectionMarginColor;\n"
     "uniform vec3 uUncertaintyMarginColor;\n"
     "uniform vec3 uResectionColor;\n"
-    "uniform vec3 uResectionGridColor;\n"
-    "uniform int uResectionClipOut;\n"
     "uniform int uInterpolatedMargins;\n"
+    "uniform vec3 uResectionGridColor;\n"
     "uniform int uGridDivisions;\n"
-    "uniform int uMarkerStyleAvailable;\n"
     "uniform float uGridThickness;\n"
     "in vec2 uvCoordsOutput;\n"
     "in vec4 vertexWCVSOutputBS;\n"
@@ -225,10 +221,6 @@ void vtkOpenGLResection2DPolyDataMapper::ReplaceShaderValues(
     "vec4 vesselBg = texture(vesselSegTexture, fragPositionMCBS.xyz);\n"
     "float lowMargin = uResectionMargin - uUncertaintyMargin;\n"
     "float highMargin = uResectionMargin + uUncertaintyMargin;\n"
-    "if(uResectionClipOut == 1 && dist[1] > 2.0){\n"
-    "  discard;\n"
-    "}\n"
-
 
     //hardcode 8 labels color
     "if(vesselBg[0] == 0){\n"
@@ -269,7 +261,7 @@ void vtkOpenGLResection2DPolyDataMapper::ReplaceShaderValues(
     "}\n"
     "else{\n"
     "  ambientColor = uResectionColor;\n"
-    "  diffuseColor = vec3(0.6);\n"
+    "  diffuseColor = vec3(0.0);\n"
     "}\n"
 
     "if(dist[0] < lowMargin){\n"
@@ -310,15 +302,29 @@ void vtkOpenGLResection2DPolyDataMapper::ReplaceShaderValues(
     "  }\n"
     "}\n"
 
-    "if(uMarkerStyleAvailable == 1 && marker.a != 0){\n"
-    "  ambientColor = vec3(marker.r,marker.g,marker.b);\n"
+    "vec3 topLeftColor = vec3(0.0, 1.0, 0.067);\n"
+    "vec3 topRightColor = vec3(1.0, 0.48, 0.0);\n"
+    "vec3 bottomLeftColor = vec3(0.66666666667, 0.00392156863, 1.0);\n"
+    "vec3 bottomRightColor = vec3(0.34117647058, 0.78039215686, 0.79607843137);\n"
+    "float borderSize = 0.025;\n"
+    "if ( (uvCoordsOutput.y > 0.5 && uvCoordsOutput.x < borderSize) || (uvCoordsOutput.y > 1.0 - borderSize && uvCoordsOutput.x < 0.5) ) {\n"
+    "  ambientColor = bottomLeftColor;\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "} else if ( (uvCoordsOutput.x < 0.5 && uvCoordsOutput.y < borderSize) || (uvCoordsOutput.x < borderSize && uvCoordsOutput.y < 0.5) ) {\n"
+    "  ambientColor = topLeftColor;\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "} else if ( (uvCoordsOutput.y > 0.5 && uvCoordsOutput.x > 1.0 - borderSize) || (uvCoordsOutput.y > 1.0 - borderSize && uvCoordsOutput.x > 0.5) ) {\n"
+    "  ambientColor = bottomRightColor;\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "} else if ((uvCoordsOutput.x > 0.5 && uvCoordsOutput.y < borderSize) || (uvCoordsOutput.x > 1.0 - borderSize && uvCoordsOutput.y < 0.5) ) {\n"
+    "  ambientColor = topRightColor;\n"
     "  diffuseColor = vec3(0.0);\n"
     "}\n"
-    );
+  );
   vtkShaderProgram::Substitute(
     FSSource, "//VTK::Light::Impl",
     "//VTK::Light::Impl\n"
-    "fragOutput0 = vec4(ambientColor+vec3(uvCoordsOutput,0.0)*0.00001 + diffuse + specular, uResectionOpacity);\n");
+    "fragOutput0 = vec4(ambientColor+vec3(uvCoordsOutput,0.0)*0.00001 + diffuse + specular, 1.0);\n");
 
 
   shaders[vtkShader::Vertex]->SetSource(VSSource);
@@ -483,11 +489,6 @@ void vtkOpenGLResection2DPolyDataMapper::SetMapperShaderParameters(
   if (cellBO.Program->IsUniformUsed("uHepaticContourThickness"))
     {
     cellBO.Program->SetUniformf("uHepaticContourThickness", this->Impl->HepaticContourThickness);
-    }
-
-  if (cellBO.Program->IsUniformUsed("uMarkerStyleAvailable"))
-    {
-    cellBO.Program->SetUniformi("uMarkerStyleAvailable", this->Impl->MarkerStyleAvailable);
     }
 
   if (cellBO.Program->IsUniformUsed("uMatRatio"))
@@ -878,19 +879,6 @@ int vtkOpenGLResection2DPolyDataMapper::GetTextureNumComps() const
 void vtkOpenGLResection2DPolyDataMapper::SetTextureNumComps(int numComps)
 {
   this->Impl->TextureNumComps = numComps;
-  this->Modified();
-}
-
-//------------------------------------------------------------------------------
-//unsigned int const* vtkOpenGLBezierResectionPolyDataMapper::GetMarkerStyleAvailable() const
-//{
-//  return this->Impl->MarkerStyleAvailable;
-//}
-
-//------------------------------------------------------------------------------
-void vtkOpenGLResection2DPolyDataMapper::SetMarkerStyleAvailable(unsigned int status)
-{
-  this->Impl->MarkerStyleAvailable = status;
   this->Modified();
 }
 

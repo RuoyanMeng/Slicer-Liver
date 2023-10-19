@@ -199,9 +199,6 @@ class LiverWidget(ScriptedLoadableModuleWidget):
     self.resectionsWidget.DistanceMapNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onResectionDistanceMapNodeChanged)
     self.resectionsWidget.DistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap', 'True')
     self.resectionsWidget.DistanceMapNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'Computed', 'True')
-    self.resectionsWidget.MarkerStyleNodeComboBox.connect('currentNodeChanged(vtkMRMLNode*)', self.onMarkerStyleNodeChanged)
-    self.resectionsWidget.MarkerStyleNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'DistanceMap', 'True')
-    self.resectionsWidget.MarkerStyleNodeComboBox.addAttribute('vtkMRMLScalarVolumeNode', 'Computed', 'True')
     self.resectionsWidget.LiverSegmentSelectorWidget.connect('currentSegmentChanged(QString)', self.onResectionLiverModelNodeChanged)
     self.resectionsWidget.LiverSegmentSelectorWidget.connect('currentNodeChanged(vtkMRMLNode*)', self.onResectionLiverSegmentationNodeChanged)
     self.resectionsWidget.ResectionColorPickerButton.connect('colorChanged(QColor)', self.onResectionColorChanged)
@@ -218,6 +215,7 @@ class LiverWidget(ScriptedLoadableModuleWidget):
     self.resectionsWidget.UncertaintyMarginComboBox.connect('currentIndexChanged(int)', self.onUncertaintyMaginComboBoxChanged)
     self.resectionsWidget.InterpolatedMarginsCheckBox.connect('stateChanged(int)', self.onInterpolatedMarginsChanged)
     self.resectogramWidget.Resection2DCheckBox.connect('stateChanged(int)', self.onResection2DChanged)
+    self.resectogramWidget.MirrorDisplayCheckBox.connect('stateChanged(int)', self.onMirrorDisplayCheckBoxChanged)
     self.resectogramWidget.FlexibleBoundaryCheckBox.connect('stateChanged(int)', self.onFlexibleBoundaryCheckBoxChanged)
     self.resectogramWidget.ARAPParametrizationCheckBox.connect('stateChanged(int)', self.onARAPParametrizationCheckBoxChanged)
     self.resectogramWidget.HepaticContourThicknessSpinBox.connect('valueChanged(double)', self.onHepaticContourThicknessChanged)
@@ -265,10 +263,6 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         self.resectionsWidget.DistanceMapNodeComboBox.blockSignals(True)
         self.resectionsWidget.DistanceMapNodeComboBox.setCurrentNode(activeResectionNode.GetDistanceMapVolumeNode())
         self.resectionsWidget.DistanceMapNodeComboBox.blockSignals(False)
-
-        self.resectionsWidget.MarkerStyleNodeComboBox.blockSignals(True)
-        self.resectionsWidget.MarkerStyleNodeComboBox.setCurrentNode(activeResectionNode.GetMarkerStyleVolumeNode())
-        self.resectionsWidget.MarkerStyleNodeComboBox.blockSignals(False)
 
         self.resectogramWidget.VascularSegmentsNodeComboBox.blockSignals(True)
         self.resectogramWidget.VascularSegmentsNodeComboBox.setCurrentNode(activeResectionNode.GetDistanceMapVolumeNode())
@@ -380,6 +374,7 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         if renderers.GetNumberOfItems() == 5:
           renderers.RemoveItem(4)
         self.resectogramWidget.Resection2DCheckBox.setCheckState(0)
+        self.resectogramWidget.Resection2DCheckBox.setEnabled(0)
         self._currentResectionNode.SetShowResection2D(False)
 
     self._currentResectionNode = activeResectionNode
@@ -407,13 +402,6 @@ class LiverWidget(ScriptedLoadableModuleWidget):
       self.resectionsWidget.ResectionPreviewGroupBox.setEnabled(distanceMapNode is not None)
       self.resectogramWidget.Resection2DCheckBox.setEnabled(distanceMapNode is not None)
 
-  def onMarkerStyleNodeChanged(self):
-    """
-    This function is called when the Marker Style selector changes
-    """
-    if self._currentResectionNode is not None:
-      MarkerStyleNode = self.resectionsWidget.MarkerStyleNodeComboBox.currentNode()
-      self._currentResectionNode.SetMarkerStyleVolumeNode(MarkerStyleNode)
 
   def onResectionLiverSegmentationNodeChanged(self):
     self.resectionsWidget.LiverSegmentSelectorWidget.blockSignals(True)
@@ -659,6 +647,8 @@ class LiverWidget(ScriptedLoadableModuleWidget):
           self.resectogramWidget.Resection2DCheckBox.isChecked())
       self.resectogramWidget.VsacularSegmentsGroupBox.setEnabled(
         self.resectogramWidget.Resection2DCheckBox.isChecked())
+      self.resectogramWidget.MirrorDisplayCheckBox.setEnabled(
+        self.resectogramWidget.Resection2DCheckBox.isChecked())
       self.resectogramWidget.FlexibleBoundaryCheckBox.setEnabled(
         self.resectogramWidget.Resection2DCheckBox.isChecked())
       self.resectogramWidget.ARAPParametrizationCheckBox.setEnabled(
@@ -668,6 +658,13 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         renderers.RemoveItem(4)
     else:
       self._currentResectionNode.SetShowResection2D(not self.resectogramWidget.Resection2DCheckBox.isChecked())
+
+  def onMirrorDisplayCheckBoxChanged(self):
+    """
+    This function is called when the MirrorDisplay changes.
+    """
+    if self._currentResectionNode:
+      self._currentResectionNode.SetMirrorDisplay(self.resectogramWidget.MirrorDisplayCheckBox.isChecked())
 
   def onARAPParametrizationCheckBoxChanged(self):
     """

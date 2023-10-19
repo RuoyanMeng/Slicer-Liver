@@ -175,8 +175,6 @@ class VTKRENDERINGOPENGL2_EXPORT vtkOpenGLResection2DPolyDataMapper : public vtk
   int GetTextureNumComps() const;
   void SetTextureNumComps(int numComps);
 
-  //  unsigned int GetMarkerStyleAvailable() const;
-  void SetMarkerStyleAvailable(unsigned int status);
 
   // Get and Set Ratio
   void SetMatRatio(float matR[2]);

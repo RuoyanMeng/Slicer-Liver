@@ -112,6 +112,17 @@ class VTK_SLICER_LIVERMARKUPS_MODULE_MRML_EXPORT vtkMRMLMarkupsBezierSurfaceDisp
   void SetEnableARAPParametrization(int value)
   { this->EnableARAPParametrization = value!=0?1:0; this->Modified();}
 
+  /// Set the MirrorDisplay state variable
+  vtkSetMacro(MirrorDisplay, bool);
+  /// Get the MirrorDisplay state variable
+  vtkGetMacro(MirrorDisplay, bool);
+  /// Get the MirrorDisplay state variable as integer
+  int GetMirrorDisplay() const
+  { return static_cast<int>(this->MirrorDisplay);}
+  /// set the MirrorDisplay state variable as integer
+  void SetMirrorDisplay(int value)
+  { this->MirrorDisplay = value!=0?1:0; this->Modified();}
+
   /// Set the clipout state variable
   vtkSetMacro(WidgetVisibility, bool);
   /// Get the clipout state variable
@@ -191,8 +202,9 @@ protected:
   bool EnableFlexibleBoundary;
   bool EnableARAPParametrization;
   float InitializeRatio[2];
+  bool MirrorDisplay;
 
-protected:
+ protected:
   vtkMRMLMarkupsBezierSurfaceDisplayNode();
   ~vtkMRMLMarkupsBezierSurfaceDisplayNode() override;
   vtkMRMLMarkupsBezierSurfaceDisplayNode( const vtkMRMLMarkupsBezierSurfaceDisplayNode& );

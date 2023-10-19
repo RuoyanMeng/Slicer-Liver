@@ -53,7 +53,8 @@
 // STD include
 #include <map>
 
-//j------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
 class vtkMRMLLiverResectionNode;
 class vtkMRMLMarkupsNode;
 class vtkMRMLMarkupsDistanceContourNode;

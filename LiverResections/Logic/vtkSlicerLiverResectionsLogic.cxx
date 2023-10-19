@@ -31,11 +31,11 @@
   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-  This file was originally developed by Rafael Palomar (Oslo University,
-  Hospital and NTNU) and was supported by The Research Council of Norway
-  through the ALive project (grant nr. 311393).
+  This file was originally developed by Rafael Palomar (Oslo University
+  Hospital and NTNU) and Ruoyan Meng (NTNU), and was supported by The
+  Research Council of Norway through the ALive project (grant nr. 311393).
 
-==============================================================================*/
+  ==============================================================================*/
 
 //NOTE: Some of the functions of this file are inspired in vtkSlicerMarkupsLogic
 
@@ -70,8 +70,11 @@
 #include <vtkPCAStatistics.h>
 #include <vtkPlaneSource.h>
 #include <vtkTable.h>
+#include <vtkImageData.h>
 
 #include <vtkMRMLGlyphableVolumeDisplayNode.h>
+#include <itkLabelImageToLabelMapFilter.h>
+#include <vtkPath.h>
 
 //----------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerLiverResectionsLogic);
@@ -174,7 +177,6 @@ void vtkSlicerLiverResectionsLogic::ProcessMRMLNodesEvents(vtkObject *caller,
       {
       bezierSurfaceNode->SetDistanceMapVolumeNode(resectionNode->GetDistanceMapVolumeNode());
       bezierSurfaceNode->SetVascularSegmentsVolumeNode(resectionNode->GetVascularSegmentsVolumeNode());
-      bezierSurfaceNode->SetMarkerStyleVolumeNode(resectionNode->GetMarkerStyleVolumeNode());
       bezierSurfaceNode->SetResectionMargin(resectionNode->GetResectionMargin());
       bezierSurfaceNode->SetUncertaintyMargin(resectionNode->GetUncertaintyMargin());
       bezierSurfaceNode->SetHepaticContourThickness(resectionNode->GetHepaticContourThickness());
@@ -187,6 +189,7 @@ void vtkSlicerLiverResectionsLogic::ProcessMRMLNodesEvents(vtkObject *caller,
         bezierSurfaceDisplayNode->SetInitializeRatio(this->InitializeRatio);
         bezierSurfaceDisplayNode->SetEnableARAPParametrization(resectionNode->GetEnableARAPParametrization());
         bezierSurfaceDisplayNode->SetShowResection2D(resectionNode->GetShowResection2D());
+        bezierSurfaceDisplayNode->SetMirrorDisplay(resectionNode->GetMirrorDisplay());
         bezierSurfaceDisplayNode->SetEnableFlexibleBoundary(resectionNode->GetEnableFlexibleBoundary());
         bezierSurfaceDisplayNode->SetTextureNumComps(resectionNode->GetTextureNumComps());
         bezierSurfaceDisplayNode->SetClipOut(resectionNode->GetClipOut());
