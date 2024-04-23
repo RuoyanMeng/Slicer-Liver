@@ -72,7 +72,11 @@ public:
     ResectionColor{1.0f,1.0f, 1.0f},
     ResectionGridColor{0.0f,0.0f, 0.0f},
     ResectionOpacity(1.0f),
-    InterpolatedMargins(false), ResectionClipOut(false)
+    InterpolatedMargins(false), ResectionClipOut(false),
+    PortalContourThickness(0.3f), HepaticContourThickness(0.3f),
+    PortalContourColor{216.0/255.0f, 101.0/255.0f, 79.0/255.0f},
+    HepaticContourColor{0.0f, 151.0/255.0f, 206.0/255.0f},
+    TextureNumComps(0)
   {
     this->RasToIjkMatrixT = vtkSmartPointer<vtkMatrix4x4>::New();
     this->IjkToTextureMatrixT = vtkSmartPointer<vtkMatrix4x4>::New();
@@ -80,6 +84,7 @@ public:
 
   vtkWeakPointer<vtkOpenGLBezierResectionPolyDataMapper> Parent;
   vtkSmartPointer<vtkTextureObject> DistanceMapTextureObject;
+  vtkSmartPointer<vtkTextureObject> VascularSegmentsTextureObject;
   vtkSmartPointer<vtkMatrix4x4> RasToIjkMatrixT;
   vtkSmartPointer<vtkMatrix4x4> IjkToTextureMatrixT;
   float ResectionMargin;
@@ -93,6 +98,11 @@ public:
   bool  ResectionClipOut;
   unsigned int GridDivisions;
   float GridThicknessFactor;
+  float PortalContourThickness;
+  float HepaticContourThickness;
+  float PortalContourColor[3];
+  float HepaticContourColor[3];
+  int TextureNumComps;
 };
 
 //------------------------------------------------------------------------------
@@ -158,6 +168,7 @@ void vtkOpenGLBezierResectionPolyDataMapper::ReplaceShaderValues(
     "//VTK::PositionVC::Dec\n"
     "#define M_PI 3.1415926535897932384626433832795\n"
     "uniform sampler3D distanceTexture;\n"
+    "uniform sampler3D vesselSegTexture;\n"
     "uniform sampler2D posMarker;\n"
     "//vec4 fragPositionMC = vertexWCVSOutput;\n");
 
@@ -177,17 +188,116 @@ void vtkOpenGLBezierResectionPolyDataMapper::ReplaceShaderValues(
     "uniform float uGridThickness;\n"
     "in vec4 vertexWCVSOutput;\n"
     "in vec2 uvCoordsOutput;\n"
-    "vec4 fragPositionMC = vertexWCVSOutput;\n");
+    "vec4 fragPositionMC = vertexWCVSOutput;\n"
+    "uniform vec3 uPortalContourColor;\n"
+    "uniform vec3 uHepaticContourColor;\n"
+    "uniform int uTextureNumComps;\n"
+    "uniform float uPortalContourThickness;\n"
+    "uniform float uHepaticContourThickness;\n");
 
   vtkShaderProgram::Substitute(
     FSSource, "//VTK::Color::Impl",
     "//VTK::Color::Impl\n"
     "vec4 marker = texture(posMarker, uvCoordsOutput);\n"
     "vec4 dist = texture(distanceTexture, fragPositionMC.xyz);\n"
+    "vec4 vesselBg = texture(vesselSegTexture, fragPositionMC.xyz);\n"
     "float lowMargin = uResectionMargin - uUncertaintyMargin;\n"
     "float highMargin = uResectionMargin + uUncertaintyMargin;\n"
     "if(uResectionClipOut == 1 && dist[1] > 2.0){\n"
     "  discard;\n"
+    "}\n"
+
+    "if(vesselBg[0] == 0){\n"
+    "  ambientColor = vec3(1.0);\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+    "else if(vesselBg[0] == 1){\n"
+    "  ambientColor = vec3(0.2, 0.5, 0.8);\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+    "else if(vesselBg[0] == 2){\n"
+    "  ambientColor = vec3(1.0, 0.8, 0.7);\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+    "else if(vesselBg[0] == 3){\n"
+    "  ambientColor = vec3(1.0, 1.0, 1.0);\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+    "else if(vesselBg[0] == 4){\n"
+    "  ambientColor = vec3(0.4, 0.7, 1.0);\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+    "else if(vesselBg[0] == 5){\n"
+    "  ambientColor = vec3(0.9, 0.5, 0.5);\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+    "else if(vesselBg[0] == 6){\n"
+    "  ambientColor = vec3(0.5, 0.9, 0.5);\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+    "else if(vesselBg[0] == 7){\n"
+    "  ambientColor = vec3(0.5, 0.9, 0.9);\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+    "else if(vesselBg[0] == 8){\n"
+    "  ambientColor = vec3(0.9, 0.9, 0.5);\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+    "else if(vesselBg[0] == 9){\n"
+    "  ambientColor = vec3(0.9, 0.7, 0.9);\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+    "else{\n"
+    "  ambientColor = uResectionColor;\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+
+
+//    "if(tan(uvCoordsOutput.x*M_PI*uGridDivisions)>10.0-uGridThickness || tan(uvCoordsOutput.y*M_PI*uGridDivisions)>10.0-uGridThickness){\n"
+//    "   ambientColor = uResectionGridColor;\n"
+//    "   diffuseColor = vec3(0.0);\n"
+//    "}\n"
+//    "else{\n"
+//    "  if(dist[0] < lowMargin){\n"
+//    "   ambientColor = uResectionMarginColor;\n"
+//    "   diffuseColor = vec3(0.0);\n"
+//    "  }\n"
+//    "  else if(dist[0] < highMargin-(highMargin-lowMargin)*0.1){\n"
+//    "    if(uInterpolatedMargins == 0){\n"
+//    "     ambientColor = uUncertaintyMarginColor;\n"
+//    "     diffuseColor = vec3(0.0);\n"
+//    "    }\n"
+//    "    else{\n"
+//    "     ambientColor = mix(uResectionMarginColor, uUncertaintyMarginColor, "
+//    "     (dist[0]-lowMargin)/(highMargin-lowMargin));\n"
+//    "     ambientColor = ambientColor;\n"
+//    "     diffuseColor = vec3(0.0);\n"
+//    "    }\n"
+//    "  }\n"
+//    "  else if(dist[0] < highMargin){\n"
+//    "   ambientColor = vec3(0.0);\n"
+//    "   diffuseColor = vec3(0.0);\n"
+//    "  }\n"
+//    "  else{\n"
+//    "    ambientColor = uResectionColor;\n"
+//    "    diffuseColor = vec3(0.6);\n"
+//    "  }\n"
+
+    "if(dist[0] < lowMargin){\n"
+    "  ambientColor = uResectionMarginColor;\n"
+    "  diffuseColor = vec3(0.0);\n"
+    "}\n"
+    "else if(dist[0] < highMargin-(highMargin-lowMargin)*0.1){\n"
+    "  if(uInterpolatedMargins == 0){\n"
+    "     ambientColor = uUncertaintyMarginColor;\n"
+    "     diffuseColor = vec3(0.0);\n"
+    "  }\n"
+    "  else{\n"
+    "    ambientColor = mix(uResectionMarginColor, uUncertaintyMarginColor, "
+    "    (dist[0]-lowMargin)/(highMargin-lowMargin));\n"
+    "    ambientColor = ambientColor;\n"
+    "    diffuseColor = vec3(0.0);\n"
+    "  }\n"
     "}\n"
 
     "if(tan(uvCoordsOutput.x*M_PI*uGridDivisions)>10.0-uGridThickness || tan(uvCoordsOutput.y*M_PI*uGridDivisions)>10.0-uGridThickness){\n"
@@ -195,49 +305,43 @@ void vtkOpenGLBezierResectionPolyDataMapper::ReplaceShaderValues(
     "   diffuseColor = vec3(0.0);\n"
     "}\n"
     "else{\n"
-    "  if(dist[0] < lowMargin){\n"
-    "   ambientColor = uResectionMarginColor;\n"
-    "   diffuseColor = vec3(0.0);\n"
-    "  }\n"
-    "  else if(dist[0] < highMargin-(highMargin-lowMargin)*0.1){\n"
-    "    if(uInterpolatedMargins == 0){\n"
-    "     ambientColor = uUncertaintyMarginColor;\n"
-    "     diffuseColor = vec3(0.0);\n"
+    "  if(uTextureNumComps > 2){\n"
+    "    if( abs(dist[1])<0.4){\n"
+    "      ambientColor = vec3(0.0,0.0,0.0);\n"
+    "      diffuseColor = vec3(0.0);\n"
     "    }\n"
-    "    else{\n"
-    "     ambientColor = mix(uResectionMarginColor, uUncertaintyMarginColor, "
-    "     (dist[0]-lowMargin)/(highMargin-lowMargin));\n"
-    "     ambientColor = ambientColor;\n"
-    "     diffuseColor = vec3(0.0);\n"
+    "    else if(dist[1]>0.4){\n"
+    "      ambientColor = vec3(1.0,1.0,1.0);\n"
+    "      diffuseColor = vec3(0.0);\n"
     "    }\n"
-    "  }\n"
-    "  else if(dist[0] < highMargin){\n"
-    "   ambientColor = vec3(0.0);\n"
-    "   diffuseColor = vec3(0.0);\n"
-    "  }\n"
-    "  else{\n"
-    "    ambientColor = uResectionColor;\n"
-    "    diffuseColor = vec3(0.6);\n"
+    "    else if( abs(dist[2])<uHepaticContourThickness && dist[1]<10){\n"
+    "      ambientColor = uHepaticContourColor;\n"
+    "      diffuseColor = vec3(0.0);\n"
+    "    }\n"
+    "    else if( abs(dist[3])<uPortalContourThickness && dist[1]<10){\n"
+    "      ambientColor = uPortalContourColor;\n"
+    "      diffuseColor = vec3(0.0);\n"
+    "    }\n"
     "  }\n"
 
-    "  vec3 topLeftColor = vec3(0.0, 1.0, 0.067);\n"
-    "  vec3 topRightColor = vec3(1.0, 0.48, 0.0);\n"
-    "  vec3 bottomLeftColor = vec3(0.66666666667, 0.00392156863, 1.0);\n"
-    "  vec3 bottomRightColor = vec3(0.34117647058, 0.78039215686, 0.79607843137);\n"
-    "  float borderSize = 0.025;\n"
-    "  if ( (uvCoordsOutput.y > 0.5 && uvCoordsOutput.x < borderSize) || (uvCoordsOutput.y > 1.0 - borderSize && uvCoordsOutput.x < 0.5) ) {\n"
-    "    ambientColor = bottomLeftColor;\n"
-    "    diffuseColor = vec3(0.0);\n"
-    "  } else if ( (uvCoordsOutput.x < 0.5 && uvCoordsOutput.y < borderSize) || (uvCoordsOutput.x < borderSize && uvCoordsOutput.y < 0.5) ) {\n"
-    "    ambientColor = topLeftColor;\n"
-    "    diffuseColor = vec3(0.0);\n"
-    "  } else if ( (uvCoordsOutput.y > 0.5 && uvCoordsOutput.x > 1.0 - borderSize) || (uvCoordsOutput.y > 1.0 - borderSize && uvCoordsOutput.x > 0.5) ) {\n"
-    "    ambientColor = bottomRightColor;\n"
-    "    diffuseColor = vec3(0.0);\n"
-    "  } else if ((uvCoordsOutput.x > 0.5 && uvCoordsOutput.y < borderSize) || (uvCoordsOutput.x > 1.0 - borderSize && uvCoordsOutput.y < 0.5) ) {\n"
-    "    ambientColor = topRightColor;\n"
-    "    diffuseColor = vec3(0.0);\n"
-    "  }\n"
+//    "  vec3 topLeftColor = vec3(0.0, 1.0, 0.067);\n"
+//    "  vec3 topRightColor = vec3(1.0, 0.48, 0.0);\n"
+//    "  vec3 bottomLeftColor = vec3(0.66666666667, 0.00392156863, 1.0);\n"
+//    "  vec3 bottomRightColor = vec3(0.34117647058, 0.78039215686, 0.79607843137);\n"
+//    "  float borderSize = 0.025;\n"
+//    "  if ( (uvCoordsOutput.y > 0.5 && uvCoordsOutput.x < borderSize) || (uvCoordsOutput.y > 1.0 - borderSize && uvCoordsOutput.x < 0.5) ) {\n"
+//    "    ambientColor = bottomLeftColor;\n"
+//    "    diffuseColor = vec3(0.0);\n"
+//    "  } else if ( (uvCoordsOutput.x < 0.5 && uvCoordsOutput.y < borderSize) || (uvCoordsOutput.x < borderSize && uvCoordsOutput.y < 0.5) ) {\n"
+//    "    ambientColor = topLeftColor;\n"
+//    "    diffuseColor = vec3(0.0);\n"
+//    "  } else if ( (uvCoordsOutput.y > 0.5 && uvCoordsOutput.x > 1.0 - borderSize) || (uvCoordsOutput.y > 1.0 - borderSize && uvCoordsOutput.x > 0.5) ) {\n"
+//    "    ambientColor = bottomRightColor;\n"
+//    "    diffuseColor = vec3(0.0);\n"
+//    "  } else if ((uvCoordsOutput.x > 0.5 && uvCoordsOutput.y < borderSize) || (uvCoordsOutput.x > 1.0 - borderSize && uvCoordsOutput.y < 0.5) ) {\n"
+//    "    ambientColor = topRightColor;\n"
+//    "    diffuseColor = vec3(0.0);\n"
+//    "  }\n"
     "}\n");
 
   vtkShaderProgram::Substitute(
@@ -292,6 +396,11 @@ void vtkOpenGLBezierResectionPolyDataMapper::SetMapperShaderParameters(
         cellBO.Program->SetUniformi("posMarker", 15);
     }
 
+    if (cellBO.Program->IsUniformUsed("vesselSegTexture"))
+    {
+    cellBO.Program->SetUniformi("vesselSegTexture", 1);
+    }
+    
     if (cellBO.Program->IsUniformUsed("uRasToIjk"))
     {
     cellBO.Program->SetUniformMatrix("uRasToIjk", this->Impl->RasToIjkMatrixT);
@@ -357,6 +466,31 @@ void vtkOpenGLBezierResectionPolyDataMapper::SetMapperShaderParameters(
     cellBO.Program->SetUniformf("uGridThickness", this->Impl->GridThicknessFactor);
     }
 
+  if (cellBO.Program->IsUniformUsed("uHepaticContourColor"))
+    {
+    cellBO.Program->SetUniform3f("uHepaticContourColor", this->Impl->HepaticContourColor);
+    }
+
+  if (cellBO.Program->IsUniformUsed("uPortalContourColor"))
+    {
+    cellBO.Program->SetUniform3f("uPortalContourColor", this->Impl->PortalContourColor);
+    }
+
+  if (cellBO.Program->IsUniformUsed("uTextureNumComps"))
+    {
+    cellBO.Program->SetUniformi("uTextureNumComps", this->Impl->TextureNumComps);
+    }
+
+  if (cellBO.Program->IsUniformUsed("uPortalContourThickness"))
+    {
+    cellBO.Program->SetUniformf("uPortalContourThickness", this->Impl->PortalContourThickness);
+    }
+
+  if (cellBO.Program->IsUniformUsed("uHepaticContourThickness"))
+    {
+    cellBO.Program->SetUniformf("uHepaticContourThickness", this->Impl->HepaticContourThickness);
+    }
+
   Superclass::SetMapperShaderParameters(cellBO, ren, actor);
 }
 
@@ -382,6 +516,30 @@ void vtkOpenGLBezierResectionPolyDataMapper::SetDistanceMapTextureObject(vtkText
 
   this->Modified();
 }
+
+//------------------------------------------------------------------------------
+vtkTextureObject* vtkOpenGLBezierResectionPolyDataMapper::GetVascularSegmentsTextureObject() const
+{
+  return this->Impl->VascularSegmentsTextureObject;
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLBezierResectionPolyDataMapper::SetVascularSegmentsTextureObject(vtkTextureObject* object)
+{
+  if (this->Impl->VascularSegmentsTextureObject == object)
+    {
+    return;
+    }
+
+  this->Impl->VascularSegmentsTextureObject = object;
+  if (object)
+    {
+    object->Register(this);
+    }
+
+  this->Modified();
+}
+
 
 //------------------------------------------------------------------------------
 vtkMatrix4x4 const* vtkOpenGLBezierResectionPolyDataMapper::GetRasToIjkMatrixT() const
@@ -631,4 +789,91 @@ void vtkOpenGLBezierResectionPolyDataMapper::SetGridThicknessFactor(float thickn
 {
  this->Impl->GridThicknessFactor = thickness;
  this->Modified();
+}
+
+//------------------------------------------------------------------------------
+float const* vtkOpenGLBezierResectionPolyDataMapper::GetHepaticContourColor() const
+{
+  return this->Impl->HepaticContourColor;
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLBezierResectionPolyDataMapper::SetHepaticContourColor(float color[3])
+{
+  this->Impl->HepaticContourColor[0] = color[0];
+  this->Impl->HepaticContourColor[1] = color[1];
+  this->Impl->HepaticContourColor[2] = color[2];
+  this->Modified();
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLBezierResectionPolyDataMapper::SetHepaticContourColor(float red, float green, float blue)
+{
+  this->Impl->HepaticContourColor[0] = red;
+  this->Impl->HepaticContourColor[1] = green;
+  this->Impl->HepaticContourColor[2] = blue;
+  this->Modified();
+}
+
+//------------------------------------------------------------------------------
+float const* vtkOpenGLBezierResectionPolyDataMapper::GetPortalContourColor() const
+{
+  return this->Impl->PortalContourColor;
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLBezierResectionPolyDataMapper::SetPortalContourColor(float color[3])
+{
+  this->Impl->PortalContourColor[0] = color[0];
+  this->Impl->PortalContourColor[1] = color[1];
+  this->Impl->PortalContourColor[2] = color[2];
+  this->Modified();
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLBezierResectionPolyDataMapper::SetPortalContourColor(float red, float green, float blue)
+{
+  this->Impl->PortalContourColor[0] = red;
+  this->Impl->PortalContourColor[1] = green;
+  this->Impl->PortalContourColor[2] = blue;
+  this->Modified();
+}
+
+//------------------------------------------------------------------------------
+float vtkOpenGLBezierResectionPolyDataMapper::GetHepaticContourThickness() const
+{
+  return this->Impl->HepaticContourThickness;
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLBezierResectionPolyDataMapper::SetHepaticContourThickness(float margin)
+{
+  this->Impl->HepaticContourThickness = margin;
+  this->Modified();
+}
+
+//------------------------------------------------------------------------------
+float vtkOpenGLBezierResectionPolyDataMapper::GetPortalContourThickness() const
+{
+  return this->Impl->PortalContourThickness;
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLBezierResectionPolyDataMapper::SetPortalContourThickness(float margin)
+{
+  this->Impl->PortalContourThickness = margin;
+  this->Modified();
+}
+
+//------------------------------------------------------------------------------
+int vtkOpenGLBezierResectionPolyDataMapper::GetTextureNumComps() const
+{
+  return this->Impl->TextureNumComps;
+}
+
+//------------------------------------------------------------------------------
+void vtkOpenGLBezierResectionPolyDataMapper::SetTextureNumComps(int numComps)
+{
+  this->Impl->TextureNumComps = numComps;
+  this->Modified();
 }

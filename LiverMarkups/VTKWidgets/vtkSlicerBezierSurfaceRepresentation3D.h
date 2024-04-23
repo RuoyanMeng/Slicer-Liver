@@ -66,6 +66,8 @@ class vtkTextureObject;
 class vtkTubeFilter;
 class vtkOpenGLBezierResectionPolyDataMapper;
 class vtkOpenGLResection2DPolyDataMapper;
+class vtkRenderStepsPass;
+class vtkGaussianBlurPass;
 
 //------------------------------------------------------------------------------
 class vtkMRMLMarkupsBezierSurfaceNode;
@@ -137,6 +139,10 @@ protected:
   // Maker style related elements
   vtkSmartPointer<vtkMultiTextureObjectHelper> MarkerStyleTexture;
   vtkSmartPointer<vtkMRMLScalarVolumeNode> MarkerStyleVolumeNode;
+
+  // create the basic VTK render steps
+  vtkSmartPointer<vtkRenderStepsPass> ResectogramRenderPasses;
+  vtkSmartPointer<vtkGaussianBlurPass> ResectogramBlurPass;
 
 protected:
   vtkSlicerBezierSurfaceRepresentation3D();

@@ -63,6 +63,8 @@
 #include <vtkAddonMathUtilities.h>
 
 // VTK includes
+#include <vtkGaussianBlurPass.h>
+#include <vtkRenderStepsPass.h>
 #include <vtkActor.h>
 #include <vtkOpenGLCamera.h>
 #include <vtkCollection.h>
@@ -95,6 +97,8 @@
 //
 #include "PythonQt.h"
 
+#include <chrono>
+using namespace std::chrono;
 
 //------------------------------------------------------------------------------
 vtkStandardNewMacro(vtkSlicerBezierSurfaceRepresentation3D);
@@ -265,11 +269,16 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateFromMRML(vtkMRMLNode* caller,
         renderWindow1->SetNumberOfLayers( RENDERER_LAYER+1 );
         }
       auto CoRenderer2D = vtkSmartPointer<vtkRenderer>::New();
+//      this->ResectogramRenderPasses = vtkSmartPointer<vtkRenderStepsPass>::New();
+//      this->ResectogramBlurPass = vtkSmartPointer<vtkGaussianBlurPass>::New();
+//      this->ResectogramBlurPass->SetDelegatePass(ResectogramRenderPasses);
+
       CoRenderer2D->SetLayer(RENDERER_LAYER);
       CoRenderer2D->InteractiveOff();
       CoRenderer2D->SetActiveCamera(this->ResectogramCamera);
       CoRenderer2D->AddActor(this->BezierSurfaceActor2D);
       CoRenderer2D->SetViewport(yViewport);
+//      CoRenderer2D->SetPass(this->ResectogramBlurPass);
       renderWindow1->AddRenderer(CoRenderer2D);
       renderWindow1->Render();
       }
@@ -486,16 +495,25 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateBezierSurfaceGeometry(vtkMRML
     matR[0] = 1;
     matR[1] = 1;
     if (BezierSurfaceDisplayNode->GetEnableFlexibleBoundary()){
+      std::cout<<"lscm"<<endl;
+      auto start = high_resolution_clock::now();
       LSCM();
+      auto stop = high_resolution_clock::now();
+      auto duration = duration_cast<microseconds>(stop - start);
+      std::cout << duration.count() << endl;
     }else if(BezierSurfaceDisplayNode->GetEnableARAPParametrization()){
+      std::cout<<"arap"<<endl;
+      auto start = high_resolution_clock::now();
       ARAP();
+      auto stop = high_resolution_clock::now();
+      auto duration = duration_cast<microseconds>(stop - start);
+      std::cout << duration.count() << endl;
     }else{
-      float matR[2];
+      this->BezierSurfaceSourcePoints = this->BezierSurfaceSource->GetOutput()->GetPoints()->GetData();
       matR[0] = 1;
       matR[1] = 0.668628;
     }
     this->BezierSurfaceResectionMapper2D->SetMatRatio(matR);
-
     if(this->BezierPlane->GetOutput()->GetPointData()->GetArray("BSPoints")){
       this->BezierPlane->GetOutput()->GetPointData()->RemoveArray("BSPoints");
       this->BezierPlane->GetOutput()->GetPointData()->AddArray(this->BezierSurfaceSourcePoints);
@@ -610,6 +628,8 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateBezierSurfaceDisplay(vtkMRMLM
   auto displayNode = vtkMRMLMarkupsBezierSurfaceDisplayNode::SafeDownCast(node->GetDisplayNode());
   this->BezierSurfaceResectionMapper->SetResectionMargin(node->GetResectionMargin());
   this->BezierSurfaceResectionMapper->SetUncertaintyMargin(node->GetUncertaintyMargin());
+  this->BezierSurfaceResectionMapper->SetHepaticContourThickness(node->GetHepaticContourThickness());
+  this->BezierSurfaceResectionMapper->SetPortalContourThickness(node->GetPortalContourThickness());
 
   this->BezierSurfaceResectionMapper2D->SetResectionMargin(node->GetResectionMargin());
   this->BezierSurfaceResectionMapper2D->SetUncertaintyMargin(node->GetUncertaintyMargin());
@@ -627,6 +647,10 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateBezierSurfaceDisplay(vtkMRMLM
     this->BezierSurfaceResectionMapper->SetInterpolatedMargins(displayNode->GetInterpolatedMargins());
     this->BezierSurfaceResectionMapper->SetGridDivisions(displayNode->GetGridDivisions());
     this->BezierSurfaceResectionMapper->SetGridThicknessFactor(displayNode->GetGridThickness());
+
+    this->BezierSurfaceResectionMapper->SetHepaticContourColor(displayNode->GetHepaticContourColor());
+    this->BezierSurfaceResectionMapper->SetPortalContourColor(displayNode->GetPortalContourColor());
+    this->BezierSurfaceResectionMapper->SetTextureNumComps(displayNode->GetTextureNumComps());
 
     this->BezierSurfaceResectionMapper2D->SetResectionColor(displayNode->GetResectionColor());
     this->BezierSurfaceResectionMapper2D->SetResectionGridColor(displayNode->GetResectionGridColor());

@@ -253,7 +253,6 @@ class LiverWidget(ScriptedLoadableModuleWidget):
       self.resectionsWidget.ResectionParametersGroupBox.setEnabled(activeResectionNode is not None)
 
       lvLogic = slicer.modules.liverresections.logic()
-      print(lvLogic)
       if activeResectionNode is not None:
 
         self.resectionsWidget.LiverSegmentSelectorWidget.blockSignals(True)
@@ -671,9 +670,10 @@ class LiverWidget(ScriptedLoadableModuleWidget):
     This function is called when the ARAPParametrizationCheckBox checkbox changes.
     """
     if self._currentResectionNode:
-      self._currentResectionNode.SetEnableARAPParametrization(self.resectogramWidget.ARAPParametrizationCheckBox.isChecked())
+      # self._currentResectionNode.SetEnableARAPParametrization(self.resectogramWidget.ARAPParametrizationCheckBox.isChecked())
 
       if self.resectogramWidget.ARAPParametrizationCheckBox.isChecked():
+
         BSNode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLMarkupsBezierSurfaceNode")
         BSNode.AddObserver(slicer.vtkMRMLMarkupsNode.PointEndInteractionEvent,
                            self.onBSEndInteraction)

@@ -66,6 +66,11 @@ public:
   /// Set distance map
   void SetDistanceMapTextureObject(vtkTextureObject* node);
 
+  /// Get Vascular Segments
+  vtkTextureObject* GetVascularSegmentsTextureObject() const;
+  /// Set Vascular Segments
+  void SetVascularSegmentsTextureObject(vtkTextureObject* object);
+
   /// Set RAS - IKJ matrix
   void SetRasToIjkMatrix(const vtkMatrix4x4*);
   /// Set RAS - IKJ matrix transposed
@@ -143,7 +148,37 @@ public:
   /// Set the thickness factor for the grid
   void SetGridThicknessFactor(float thicknessFactor);
 
-protected:
+  /// Get the hepatic contour margin
+  float GetHepaticContourThickness() const;
+  /// Set the resection margin
+  void SetHepaticContourThickness(float margin);
+
+  /// Get the uncertainty margin
+  float GetPortalContourThickness() const;
+  /// Set the resection margin
+  void SetPortalContourThickness(float margin);
+
+  /// Get the portal contour color
+  float const* GetPortalContourColor() const;
+  /// Set the portal contour color
+  void SetPortalContourColor(float color[3]);
+  /// Set the portal contour color
+  void SetPortalContourColor(float red, float green, float blue);
+
+  /// Get the hepatic contour color
+  float const* GetHepaticContourColor() const;
+  /// Set the hepatic contour color
+  void SetHepaticContourColor(float color[3]);
+  /// Set the hepatic contour color
+  void SetHepaticContourColor(float red, float green, float blue);
+
+  // Get and Set TextureNumComps
+  int GetTextureNumComps() const;
+  void SetTextureNumComps(int numComps);
+
+
+
+ protected:
   vtkOpenGLBezierResectionPolyDataMapper();
   ~vtkOpenGLBezierResectionPolyDataMapper();
 
