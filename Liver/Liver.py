@@ -217,7 +217,7 @@ class LiverWidget(ScriptedLoadableModuleWidget):
     self.resectogramWidget.Resection2DCheckBox.connect('stateChanged(int)', self.onResection2DChanged)
     self.resectogramWidget.MirrorDisplayCheckBox.connect('stateChanged(int)', self.onMirrorDisplayCheckBoxChanged)
     self.resectogramWidget.FlexibleBoundaryCheckBox.connect('stateChanged(int)', self.onFlexibleBoundaryCheckBoxChanged)
-    self.resectogramWidget.ARAPParametrizationCheckBox.connect('stateChanged(int)', self.onARAPParametrizationCheckBoxChanged)
+    # self.resectogramWidget.ARAPParametrizationCheckBox.connect('stateChanged(int)', self.onARAPParametrizationCheckBoxChanged)
     self.resectogramWidget.HepaticContourThicknessSpinBox.connect('valueChanged(double)', self.onHepaticContourThicknessChanged)
     self.resectogramWidget.HepaticContourColorPickerButton.connect('colorChanged(QColor)', self.onHepaticContourColorChanged)
     self.resectogramWidget.PortalContourThicknessSpinBox.connect('valueChanged(double)', self.onPortalContourThicknessChanged)
@@ -326,12 +326,12 @@ class LiverWidget(ScriptedLoadableModuleWidget):
           self.resectogramWidget.FlexibleBoundaryCheckBox.setCheckState(2)
         self.resectogramWidget.FlexibleBoundaryCheckBox.blockSignals(False)
 
-        self.resectogramWidget.ARAPParametrizationCheckBox.blockSignals(True)
-        if (activeResectionNode.GetWidgetVisibility()):
-          self.resectogramWidget.ARAPParametrizationCheckBox.setCheckState(0)
-        else:
-          self.resectogramWidget.ARAPParametrizationCheckBox.setCheckState(2)
-        self.resectogramWidget.ARAPParametrizationCheckBox.blockSignals(False)
+        # self.resectogramWidget.ARAPParametrizationCheckBox.blockSignals(True)
+        # if (activeResectionNode.GetWidgetVisibility()):
+        #   self.resectogramWidget.ARAPParametrizationCheckBox.setCheckState(0)
+        # else:
+        #   self.resectogramWidget.ARAPParametrizationCheckBox.setCheckState(2)
+        # self.resectogramWidget.ARAPParametrizationCheckBox.blockSignals(False)
 
         self.resectionsWidget.UncertaintyMarginSpinBox.blockSignals(True)
         self.resectionsWidget.UncertaintyMarginSpinBox.setValue(activeResectionNode.GetUncertaintyMargin())
@@ -470,7 +470,7 @@ class LiverWidget(ScriptedLoadableModuleWidget):
     qt.QApplication.setOverrideCursor(qt.Qt.WaitCursor)
     segmentationNode = self.distanceMapsWidget.SegmentationSelectorComboBox.currentNode()
     refVolumeNode = self.distanceMapsWidget.ReferenceVolumeSelector.currentNode()
-    tumorSegmentId = self.distanceMapsWidget.TumorSegmentSelectorWidget.currentSegmentID()
+    tumorSegmentIds = self.distanceMapsWidget.TumorSegmentSelectorWidget.selectedSegmentIDs()
     parenchymaSegmentId = self.distanceMapsWidget.ParenchymaSegmentSelectorWidget.currentSegmentID()
     hepaticSegmentId = self.distanceMapsWidget.HepaticSegmentSelectorWidget.currentSegmentID()
     portalSegmentId = self.distanceMapsWidget.PortalSegmentSelectorWidget.currentSegmentID()
@@ -492,9 +492,7 @@ class LiverWidget(ScriptedLoadableModuleWidget):
     if not portalLabelmapVolumeNode:
       portalLabelmapVolumeNode = slicer.mrmlScene.AddNewNodeByClass("vtkMRMLLabelMapVolumeNode", "PortalLabelMap")
 
-    segmentationIds.Initialize()
-    segmentationIds.InsertNextValue(tumorSegmentId)
-    slicer.modules.segmentations.logic().ExportSegmentsToLabelmapNode(segmentationNode, segmentationIds,
+    slicer.modules.segmentations.logic().ExportSegmentsToLabelmapNode(segmentationNode, tumorSegmentIds,
                                                                       tumorLabelmapVolumeNode, refVolumeNode)
 
     segmentationIds.Initialize()
@@ -650,8 +648,8 @@ class LiverWidget(ScriptedLoadableModuleWidget):
         self.resectogramWidget.Resection2DCheckBox.isChecked())
       self.resectogramWidget.FlexibleBoundaryCheckBox.setEnabled(
         self.resectogramWidget.Resection2DCheckBox.isChecked())
-      self.resectogramWidget.ARAPParametrizationCheckBox.setEnabled(
-        self.resectogramWidget.Resection2DCheckBox.isChecked())
+      # self.resectogramWidget.ARAPParametrizationCheckBox.setEnabled(
+      #   self.resectogramWidget.Resection2DCheckBox.isChecked())
       renderers = slicer.app.layoutManager().threeDWidget(0).threeDView().renderWindow().GetRenderers()
       if self.resectogramWidget.Resection2DCheckBox.isChecked() == 0 and renderers.GetNumberOfItems() == 5:
         renderers.RemoveItem(4)
@@ -665,32 +663,44 @@ class LiverWidget(ScriptedLoadableModuleWidget):
     if self._currentResectionNode:
       self._currentResectionNode.SetMirrorDisplay(self.resectogramWidget.MirrorDisplayCheckBox.isChecked())
 
-  def onARAPParametrizationCheckBoxChanged(self):
-    """
-    This function is called when the ARAPParametrizationCheckBox checkbox changes.
-    """
-    if self._currentResectionNode:
-      # self._currentResectionNode.SetEnableARAPParametrization(self.resectogramWidget.ARAPParametrizationCheckBox.isChecked())
+  # def onARAPParametrizationCheckBoxChanged(self):
+  #   """
+  #   This function is called when the ARAPParametrizationCheckBox checkbox changes.
+  #   """
+  #   if self._currentResectionNode:
+  #     # self._currentResectionNode.SetEnableARAPParametrization(self.resectogramWidget.ARAPParametrizationCheckBox.isChecked())
+  #
+      # if self.resectogramWidget.ARAPParametrizationCheckBox.isChecked():
+      #
+      #   BSNode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLMarkupsBezierSurfaceNode")
+      #   BSNode.AddObserver(slicer.vtkMRMLMarkupsNode.PointEndInteractionEvent,
+      #                      self.onBSEndInteraction)
+      #   BSNode.AddObserver(slicer.vtkMRMLMarkupsNode.PointStartInteractionEvent,
+      #                      self.onBSStartInteraction)
 
-      if self.resectogramWidget.ARAPParametrizationCheckBox.isChecked():
+  # def onBSStartInteraction(self, caller, event):
+  #   if self.resectogramWidget.FlexibleBoundaryCheckBox.isChecked():
+  #     self._currentResectionNode.SetEnableFlexibleBoundary(0)
 
-        BSNode = slicer.mrmlScene.GetFirstNodeByClass("vtkMRMLMarkupsBezierSurfaceNode")
-        BSNode.AddObserver(slicer.vtkMRMLMarkupsNode.PointEndInteractionEvent,
-                           self.onBSEndInteraction)
-        BSNode.AddObserver(slicer.vtkMRMLMarkupsNode.PointStartInteractionEvent,
-                           self.onBSStartInteraction)
-
-  def onBSStartInteraction(self, caller, event):
-    self._currentResectionNode.SetEnableARAPParametrization(0)
-
-  def onBSEndInteraction(self, caller, event):
-    self._currentResectionNode.SetEnableARAPParametrization(self.resectogramWidget.ARAPParametrizationCheckBox.isChecked())
+  # def onBSEndInteraction(self, caller, event):
+  #   if self.resectogramWidget.FlexibleBoundaryCheckBox.isChecked():
+  #     self._currentResectionNode.SetEnableFlexibleBoundary(self.resectogramWidget.FlexibleBoundaryCheckBox.isChecked())
 
   def onFlexibleBoundaryCheckBoxChanged(self):
     """
     This function is called when the FlexibleBoundaryCheckBox checkbox changes.
     """
     if self._currentResectionNode:
+      import subprocess
+      import sys
+      try:
+        import igl
+        print("libigl is already installed.")
+      except ImportError:
+        print("libigl not found. Installing...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "libigl"])
+        print("libigl has been installed successfully.")
+
       self._currentResectionNode.SetEnableFlexibleBoundary(self.resectogramWidget.FlexibleBoundaryCheckBox.isChecked())
 
   def onHepaticContourThicknessChanged(self):

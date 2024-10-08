@@ -99,7 +99,6 @@ protected:
   /// TransferDistanceMap
   void CreateAndTransferDistanceMapTexture(vtkMRMLScalarVolumeNode* node, int numComps);
   void CreateAndTransferVascularSegmentsTexture(vtkMRMLScalarVolumeNode *node);
-  void CreateAndTransferMarkerStyleTexture(vtkMRMLScalarVolumeNode *node);
   void LSCM();
   void ARAP();
   void ResectogramPlaneCenter(bool mirror);

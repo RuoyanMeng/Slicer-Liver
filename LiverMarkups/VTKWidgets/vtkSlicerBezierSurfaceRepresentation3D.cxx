@@ -495,12 +495,12 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateBezierSurfaceGeometry(vtkMRML
     matR[0] = 1;
     matR[1] = 1;
     if (BezierSurfaceDisplayNode->GetEnableFlexibleBoundary()){
-      std::cout<<"lscm"<<endl;
+//      std::cout<<"lscm"<<endl;
       auto start = high_resolution_clock::now();
       LSCM();
       auto stop = high_resolution_clock::now();
       auto duration = duration_cast<microseconds>(stop - start);
-      std::cout << duration.count() << endl;
+//      std::cout << duration.count() << endl;
     }else if(BezierSurfaceDisplayNode->GetEnableARAPParametrization()){
       std::cout<<"arap"<<endl;
       auto start = high_resolution_clock::now();
@@ -628,8 +628,6 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateBezierSurfaceDisplay(vtkMRMLM
   auto displayNode = vtkMRMLMarkupsBezierSurfaceDisplayNode::SafeDownCast(node->GetDisplayNode());
   this->BezierSurfaceResectionMapper->SetResectionMargin(node->GetResectionMargin());
   this->BezierSurfaceResectionMapper->SetUncertaintyMargin(node->GetUncertaintyMargin());
-  this->BezierSurfaceResectionMapper->SetHepaticContourThickness(node->GetHepaticContourThickness());
-  this->BezierSurfaceResectionMapper->SetPortalContourThickness(node->GetPortalContourThickness());
 
   this->BezierSurfaceResectionMapper2D->SetResectionMargin(node->GetResectionMargin());
   this->BezierSurfaceResectionMapper2D->SetUncertaintyMargin(node->GetUncertaintyMargin());
@@ -647,10 +645,6 @@ void vtkSlicerBezierSurfaceRepresentation3D::UpdateBezierSurfaceDisplay(vtkMRMLM
     this->BezierSurfaceResectionMapper->SetInterpolatedMargins(displayNode->GetInterpolatedMargins());
     this->BezierSurfaceResectionMapper->SetGridDivisions(displayNode->GetGridDivisions());
     this->BezierSurfaceResectionMapper->SetGridThicknessFactor(displayNode->GetGridThickness());
-
-    this->BezierSurfaceResectionMapper->SetHepaticContourColor(displayNode->GetHepaticContourColor());
-    this->BezierSurfaceResectionMapper->SetPortalContourColor(displayNode->GetPortalContourColor());
-    this->BezierSurfaceResectionMapper->SetTextureNumComps(displayNode->GetTextureNumComps());
 
     this->BezierSurfaceResectionMapper2D->SetResectionColor(displayNode->GetResectionColor());
     this->BezierSurfaceResectionMapper2D->SetResectionGridColor(displayNode->GetResectionGridColor());
@@ -716,12 +710,11 @@ void vtkSlicerBezierSurfaceRepresentation3D::LSCM()
     "  b[1] = bnd[int(bnd.size/2)];"
     "  bc = numpy.array([[0.0,0.0],[1.0,0.0]]);"
     "  _, uv = igl.lscm(vn, fn, b, bc);\n "
-    "  degree = 55/180*math.pi;\n "
+    "  degree = 210/180*math.pi;\n "
     "  uv_ = numpy.asarray([numpy.dot(uv.T[1], numpy.sin(degree))+numpy.dot(uv.T[0], numpy.cos(degree)),\n"
     "                       numpy.dot(uv.T[1], numpy.cos(degree))-numpy.dot(uv.T[0], numpy.sin(degree))]).T;\n "
     "  res = uv_.flatten()*100;\n "
     "  return res;\n");
-
   QVariant result = context.call("LSCM");
   QVariantList reL = result.toList();
   auto points2d = vtkSmartPointer<vtkPoints>::New();
@@ -765,7 +758,7 @@ void vtkSlicerBezierSurfaceRepresentation3D::ARAP()
     "  uv = igl.harmonic_weights(vn, fn, bnd, bnd_uv, 1);\n "
     "  arap = igl.ARAP(vn, fn, 2, numpy.zeros(0));\n "
     "  uva = arap.solve(numpy.zeros((0, 0)), uv);\n "
-    "  degree = 40/180*math.pi;\n "
+    "  degree = 0;\n "
     "  uva_ = numpy.asarray([numpy.dot(uva.T[1], numpy.sin(degree))+numpy.dot(uva.T[0], numpy.cos(degree)),\n"
     "                       numpy.dot(uva.T[1], numpy.cos(degree))-numpy.dot(uva.T[0], numpy.sin(degree))]).T;\n "
     "  res = uva_.flatten();\n "

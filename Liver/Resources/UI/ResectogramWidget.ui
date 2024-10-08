@@ -53,16 +53,16 @@
         </property>
        </widget>
       </item>
-      <item>
-       <widget class="QCheckBox" name="ARAPParametrizationCheckBox">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="text">
-         <string>Enable As-Rigid-As-Possible Parametrization</string>
-        </property>
-       </widget>
-      </item>
+<!--      <item>-->
+<!--       <widget class="QCheckBox" name="ARAPParametrizationCheckBox">-->
+<!--        <property name="enabled">-->
+<!--         <bool>false</bool>-->
+<!--        </property>-->
+<!--        <property name="text">-->
+<!--         <string>Enable As-Rigid-As-Possible Parametrization</string>-->
+<!--        </property>-->
+<!--       </widget>-->
+<!--      </item>-->
       <item>
        <widget class="QGroupBox" name="ResectogramSizeSliderGroupBox">
         <property name="enabled">

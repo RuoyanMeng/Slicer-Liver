@@ -75,6 +75,9 @@
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="multiSelection">
+         <bool>true</bool>
+        </property>
         <property name="segmentationNodeSelectorVisible">
          <bool>false</bool>
         </property>
